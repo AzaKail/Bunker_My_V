@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>БУНКЕР</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@300;400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #c8a84b;
+    --accent2: #8b3a3a;
+    --text: #d4cfc5;
+    --text-dim: #6b6560;
+    --text-bright: #f0ebe0;
+    --green: #4a7c59;
+    --red: #8b3a3a;
+    --danger: #c0392b;
+    --mono: 'Share Tech Mono', monospace;
+    --display: 'Oswald', sans-serif;
+    --stamp: 'Special Elite', cursive;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Noise texture */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.4;
+  }
+
+  /* ── Layout ── */
+  #app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    text-align: center;
+    padding: 40px 0 30px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+    position: relative;
+  }
+
+  .site-header::before {
+    content: '⚠ ПРОТОКОЛ ВЫЖИВАНИЯ ⚠';
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 16px;
+  }
+
+  .logo {
+    font-family: var(--display);
+    font-size: clamp(48px, 10vw, 96px);
+    font-weight: 700;
+    letter-spacing: 12px;
+    color: var(--text-bright);
+    text-shadow:
+      0 0 40px rgba(200, 168, 75, 0.3),
+      0 0 80px rgba(200, 168, 75, 0.1);
+    position: relative;
+  }
+
+  .logo span {
+    color: var(--accent);
+  }
+
+  .logo-sub {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 6px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; animation: fadeIn 0.3s ease; }
+  .screen.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Cards / panels ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--accent);
+  }
+
+  .panel-title {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  /* ── Forms ── */
+  .field {
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-bright);
+    font-family: var(--mono);
+    font-size: 16px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+    letter-spacing: 2px;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent) inset;
+  }
+
+  input[type="text"]::placeholder { color: var(--text-dim); }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 12px 24px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    z-index: -1;
+  }
+
+  .btn:hover { color: var(--bg); }
+  .btn:hover::before { transform: translateX(0); }
+  .btn:active { transform: scale(0.98); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .btn-primary::before { background: #a8882b; }
+  .btn-primary:hover { color: var(--bg); }
+
+  .btn-danger {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .btn-danger::before { background: var(--danger); }
+
+  .btn-ghost {
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+  .btn-ghost::before { background: var(--border); }
+  .btn-ghost:hover { color: var(--text); }
+
+  .btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .btn-full { width: 100%; }
+
+  /* ── Home screen ── */
+  .home-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  @media (max-width: 480px) {
+    .home-actions { grid-template-columns: 1fr; }
+  }
+
+  .action-card {
+    border: 1px solid var(--border);
+    padding: 32px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    background: var(--surface);
+  }
+
+  .action-card:hover {
+    border-color: var(--accent);
+    background: var(--surface2);
+  }
+
+  .action-card .icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .action-card .title {
+    font-family: var(--display);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: var(--text-bright);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .action-card .desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* ── Lobby ── */
+  .room-code {
+    font-family: var(--display);
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 16px;
+    color: var(--accent);
+    text-align: center;
+    padding: 24px;
+    border: 1px dashed var(--accent);
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .room-code:hover { background: rgba(200, 168, 75, 0.05); }
+
+  .copy-hint {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    margin-bottom: 24px;
+  }
+
+  .player-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .player-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    transition: border-color 0.2s;
+  }
+
+  .player-item.alive { border-left: 2px solid var(--green); }
+  .player-item.dead { border-left: 2px solid var(--red); opacity: 0.5; }
+  .player-item.you { border-left: 2px solid var(--accent); }
+
+  .player-badge {
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    background: var(--border);
+    padding: 2px 6px;
+    text-transform: uppercase;
+  }
+
+  .player-badge.host { color: var(--accent); background: rgba(200, 168, 75, 0.1); }
+
+  .player-name {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 400;
+    letter-spacing: 2px;
+    flex: 1;
+  }
+
+  /* ── Scenario banner ── */
+  .scenario-box {
+    background: var(--surface2);
+    border: 1px solid var(--accent2);
+    border-left: 4px solid var(--accent2);
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .scenario-name {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #e07070;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .scenario-desc {
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .bunker-capacity {
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 2px;
+  }
+
+  /* ── Player card ── */
+  .my-card {
+    background: var(--surface2);
+    border: 1px solid var(--accent);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .my-card::after {
+    content: 'ЛИЧНОЕ ДЕЛО';
+    position: absolute;
+    top: 12px; right: -20px;
+    font-family: var(--stamp);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: rgba(200, 168, 75, 0.2);
+    transform: rotate(90deg);
+    transform-origin: right center;
+  }
+
+  .traits-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  @media (max-width: 480px) {
+    .traits-grid { grid-template-columns: 1fr; }
+  }
+
+  .trait-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .trait-item:hover:not(.revealed) {
+    border-color: var(--accent);
+  }
+
+  .trait-item.revealed {
+    border-color: var(--green);
+    cursor: default;
+  }
+
+  .trait-item.revealed::after {
+    content: '✓';
+    position: absolute;
+    top: 8px; right: 8px;
+    color: var(--green);
+    font-size: 12px;
+  }
+
+  .trait-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .trait-value {
+    font-family: var(--stamp);
+    font-size: 14px;
+    color: var(--text-bright);
+    line-height: 1.4;
+  }
+
+  .trait-hidden {
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+  }
+
+  /* ── Vote button on player ── */
+  .vote-btn {
+    padding: 6px 12px;
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+
+  .vote-count {
+    font-size: 11px;
+    color: var(--danger);
+    margin-left: auto;
+  }
+
+  /* ── Reveal log ── */
+  .log-entry {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .log-entry:last-child { border-bottom: none; }
+
+  .log-who { color: var(--accent); }
+  .log-trait { color: var(--text-dim); }
+  .log-value { color: var(--text-bright); font-family: var(--stamp); }
+
+  /* ── Status bar ── */
+  .status-bar {
+    display: flex;
+    gap: 24px;
+    padding: 12px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .stat-value {
+    font-family: var(--display);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* ── Notification ── */
+  #notification {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-left: 3px solid var(--accent);
+    padding: 12px 24px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    z-index: 2000;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+    max-width: 90vw;
+    white-space: normal;
+    text-align: center;
+  }
+
+  #notification.show { transform: translateX(-50%) translateY(0); }
+  #notification.error { border-color: var(--danger); }
+  #notification.success { border-color: var(--green); }
+
+  /* ── Game over ── */
+  .game-over-title {
+    font-family: var(--display);
+    font-size: clamp(36px, 8vw, 72px);
+    font-weight: 700;
+    letter-spacing: 8px;
+    text-align: center;
+    margin: 32px 0;
+    text-transform: uppercase;
+  }
+
+  .game-over-title.win { color: var(--accent); }
+  .game-over-title.lose { color: var(--danger); }
+
+  .game-over-sub {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    margin-bottom: 32px;
+  }
+
+  /* ── Voting mode highlight ── */
+  .voting-active .player-item.alive {
+    cursor: pointer;
+    border-color: var(--border);
+  }
+
+  .voting-active .player-item.alive:hover {
+    border-color: var(--danger);
+    background: rgba(139, 58, 58, 0.1);
+  }
+
+  .player-item.voted-for { border-color: var(--danger) !important; }
+
+  /* ── Phase badge ── */
+  .phase-badge {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 4px;
+    padding: 4px 10px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .phase-badge.playing { background: rgba(74, 124, 89, 0.2); color: var(--green); border: 1px solid var(--green); }
+  .phase-badge.voting { background: rgba(139, 58, 58, 0.2); color: #e07070; border: 1px solid var(--accent2); animation: pulse 1s infinite; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Connection status ── */
+  .conn-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 6px;
+    animation: blink 2s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .conn-dot.off { background: var(--danger); animation: none; }
+
+  small { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+</style>
+</head>
+<body>
+
+<div id="notification"></div>
+
+<div id="app">
+  <header class="site-header">
+    <div class="logo">БУН<span>КЕР</span></div>
+    <div class="logo-sub">Игра на выживание</div>
+  </header>
+
+  <!-- ══════════════ HOME ══════════════ -->
+  <div id="screen-home" class="screen active">
+    <div class="panel">
+      <div class="panel-title">Добро пожаловать</div>
+      <p style="font-size:12px; color:var(--text); line-height:1.8; letter-spacing:1px;">
+        Катастрофа уничтожила мир. Вы — группа выживших перед бункером.
+        Мест меньше, чем людей. Решайте, кто достоин спастись.
+      </p>
+    </div>
+
+    <div class="home-actions">
+      <div class="action-card" onclick="showCreate()">
+        <span class="icon">🔐</span>
+        <div class="title">Создать</div>
+        <div class="desc">Открыть новую комнату и стать хостом</div>
+      </div>
+      <div class="action-card" onclick="showJoin()">
+        <span class="icon">📡</span>
+        <div class="title">Войти</div>
+        <div class="desc">Подключиться по коду комнаты</div>
+      </div>
+    </div>
+
+    <!-- Create form -->
+    <div id="create-form" style="display:none; margin-top:24px;">
+      <div class="panel">
+        <div class="panel-title">Создать комнату</div>
+        <div class="field">
+          <label>Ваше имя</label>
+          <input type="text" id="create-name" maxlength="20" placeholder="Введите имя...">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="doCreate()">Создать комнату</button>
+          <button class="btn btn-ghost" onclick="hideAll()">Отмена</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Join form -->
+    <div id="join-form" style="display:none; margin-top:24px;">
+      <div class="panel">
+        <div class="panel-title">Войти в комнату</div>
+        <div class="field">
+          <label>Код комнаты</label>
+          <input type="text" id="join-code" maxlength="6" placeholder="XXXXXX" style="text-transform:uppercase; letter-spacing:8px; font-size:24px;">
+        </div>
+        <div class="field">
+          <label>Ваше имя</label>
+          <input type="text" id="join-name" maxlength="20" placeholder="Введите имя...">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="doJoin()">Войти</button>
+          <button class="btn btn-ghost" onclick="hideAll()">Отмена</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ LOBBY ══════════════ -->
+  <div id="screen-lobby" class="screen">
+    <div class="panel">
+      <div class="panel-title">Код комнаты</div>
+      <div class="room-code" id="room-code-display" onclick="copyCode()" title="Нажмите чтобы скопировать">------</div>
+      <div class="copy-hint">↑ нажмите чтобы скопировать</div>
+      <small><span class="conn-dot" id="conn-dot"></span>Подключено</small>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Игроки в лобби</div>
+      <div id="lobby-players" class="player-list"></div>
+    </div>
+
+    <div id="host-start" style="display:none; margin-top:16px;">
+      <button class="btn btn-primary btn-full" onclick="doStart()">▶ Начать игру</button>
+      <p style="font-size:10px; color:var(--text-dim); text-align:center; margin-top:8px; letter-spacing:1px;">
+        Минимум 3 игрока
+      </p>
+    </div>
+    <div id="wait-start" style="display:none;">
+      <p style="font-size:11px; color:var(--text-dim); text-align:center; letter-spacing:2px; padding:16px;">
+        Ожидание хоста...
+      </p>
+    </div>
+  </div>
+
+  <!-- ══════════════ GAME ══════════════ -->
+  <div id="screen-game" class="screen">
+
+    <div id="phase-badge" class="phase-badge playing">● Обсуждение</div>
+
+    <!-- Scenario -->
+    <div id="scenario-box" class="scenario-box"></div>
+
+    <!-- Status -->
+    <div class="status-bar">
+      <div class="stat">
+        <span class="stat-label">Раунд</span>
+        <span class="stat-value" id="stat-round">1</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Выживших</span>
+        <span class="stat-value" id="stat-alive">?</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Мест в бункере</span>
+        <span class="stat-value" id="stat-capacity">?</span>
+      </div>
+    </div>
+
+    <!-- My card -->
+    <div class="section-title">Ваша карточка</div>
+    <div class="panel my-card" id="my-card-panel">
+      <div class="panel-title">Досье — <span id="my-name-display">—</span></div>
+      <p style="font-size:10px; color:var(--text-dim); letter-spacing:2px; margin-bottom:16px;">
+        Нажмите на характеристику чтобы раскрыть её всем
+      </p>
+      <div class="traits-grid" id="my-traits"></div>
+    </div>
+
+    <!-- Players + voting -->
+    <div class="section-title">Участники</div>
+    <div id="players-list" class="player-list"></div>
+
+    <!-- Host controls -->
+    <div id="host-controls" style="display:none; margin-top:24px;">
+      <hr class="divider">
+      <div class="btn-row">
+        <button class="btn btn-danger" id="btn-start-vote" onclick="doStartVoting()">⚡ Начать голосование</button>
+        <button class="btn btn-danger" id="btn-end-vote" onclick="doEndVoting()" style="display:none;">✓ Завершить голосование</button>
+        <button class="btn btn-ghost" onclick="doRestart()">↺ Перезапустить</button>
+      </div>
+    </div>
+
+    <!-- Reveal log -->
+    <hr class="divider">
+    <div class="section-title">Лог раскрытий</div>
+    <div class="panel" style="padding:0; max-height:200px; overflow-y:auto;">
+      <div id="reveal-log"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ GAME OVER ══════════════ -->
+  <div id="screen-over" class="screen">
+    <div id="over-title" class="game-over-title"></div>
+    <div id="over-sub" class="game-over-sub"></div>
+
+    <div class="section-title">Все участники</div>
+    <div id="over-players" class="player-list" style="margin-bottom:24px;"></div>
+
+    <div id="host-restart" style="display:none; text-align:center;">
+      <button class="btn btn-primary" onclick="doRestart()">↺ Новая игра</button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let ws = null;
+let myId = null;
+let myRoomId = null;
+let myIsHost = false;
+let gameState = null;
+
+const TRAIT_NAMES = {
+  profession: 'Профессия',
+  health: 'Здоровье',
+  hobby: 'Хобби',
+  luggage: 'Багаж',
+  fact: 'Доп. факт',
+  phobia: 'Фобия',
+};
+
+// ── WebSocket ──────────────────────────────────────────────────────────────
+function connectWS(onOpen) {
+  const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+  const url = `${protocol}://${location.host}/ws`;
+  ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    setConnDot(true);
+    if (onOpen) onOpen();
+  };
+
+  ws.onclose = () => {
+    setConnDot(false);
+    notify('Соединение потеряно. Обновите страницу.', 'error', 5000);
+  };
+
+  ws.onerror = () => {
+    notify('Ошибка подключения', 'error');
+  };
+
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    handleMessage(msg);
+  };
+}
+
+function send(obj) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify(obj));
+  }
+}
+
+function handleMessage(msg) {
+  switch (msg.type) {
+    case 'joined':
+      myId = msg.player_id;
+      myRoomId = msg.room_id;
+      myIsHost = msg.is_host;
+      document.getElementById('room-code-display').textContent = myRoomId;
+      showScreen('lobby');
+      break;
+
+    case 'state':
+      gameState = msg.data;
+      renderState();
+      break;
+
+    case 'error':
+      notify(msg.message, 'error');
+      break;
+
+    case 'game_started':
+      notify('Игра началась! Карточки розданы.', 'success');
+      break;
+
+    case 'trait_revealed':
+      if (msg.data && msg.data.player_id !== myId) {
+        notify(`${msg.data.player_name} раскрыл: ${TRAIT_NAMES[msg.data.trait_key] || msg.data.trait_key}`, 'info');
+      }
+      break;
+
+    case 'voting_started':
+      notify('⚡ Голосование началось! Выберите кандидата на исключение.', 'error');
+      break;
+
+    case 'player_eliminated':
+      notify(`🚪 ${msg.player_name} исключён из бункера.`, 'error', 4000);
+      break;
+
+    case 'no_elimination':
+      notify('Голоса не совпали — никто не исключён.', 'info');
+      break;
+
+    case 'game_over':
+      // state update will trigger render
+      break;
+
+    case 'game_restarted':
+      notify('Новая игра!', 'success');
+      break;
+
+    case 'player_left':
+      notify(`${msg.player_name} покинул игру`, 'info');
+      break;
+  }
+}
+
+// ── Rendering ──────────────────────────────────────────────────────────────
+function renderState() {
+  if (!gameState) return;
+  const phase = gameState.phase;
+
+  if (phase === 'lobby') {
+    showScreen('lobby');
+    renderLobby();
+  } else if (phase === 'playing' || phase === 'voting') {
+    showScreen('game');
+    renderGame();
+  } else if (phase === 'finished') {
+    showScreen('game');
+    renderGame();
+    showScreen('over');
+    renderOver();
+  }
+}
+
+function renderLobby() {
+  if (!gameState) return;
+  const container = document.getElementById('lobby-players');
+  container.innerHTML = gameState.players.map(p => `
+    <div class="player-item ${p.id === myId ? 'you' : 'alive'}">
+      <span class="player-name">${esc(p.name)}</span>
+      ${p.is_host ? '<span class="player-badge host">Хост</span>' : ''}
+      ${p.id === myId ? '<span class="player-badge">Вы</span>' : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('host-start').style.display = myIsHost ? 'block' : 'none';
+  document.getElementById('wait-start').style.display = myIsHost ? 'none' : 'block';
+}
+
+function renderGame() {
+  if (!gameState) return;
+  const phase = gameState.phase;
+  const isVoting = phase === 'voting';
+
+  // Phase badge
+  const badge = document.getElementById('phase-badge');
+  badge.className = `phase-badge ${isVoting ? 'voting' : 'playing'}`;
+  badge.textContent = isVoting ? '● Голосование' : '● Обсуждение';
+
+  // Scenario
+  const s = gameState.scenario;
+  document.getElementById('scenario-box').innerHTML = `
+    <div class="scenario-name">⚠ ${esc(s.name || '')}</div>
+    <div class="scenario-desc">${esc(s.description || '')}</div>
+    <div class="bunker-capacity">${esc(s.bunker || '')}</div>
+  `;
+
+  // Stats
+  document.getElementById('stat-round').textContent = gameState.round;
+  document.getElementById('stat-alive').textContent = gameState.alive_count;
+  document.getElementById('stat-capacity').textContent = gameState.bunker_capacity;
+
+  // My card
+  const me = gameState.players.find(p => p.id === myId);
+  if (me && me.card) {
+    document.getElementById('my-name-display').textContent = me.name;
+    const traitsHtml = Object.entries(TRAIT_NAMES).map(([key, label]) => {
+      const revealed = me.revealed_traits.includes(key);
+      const value = me.card[key] || '—';
+      return `
+        <div class="trait-item ${revealed ? 'revealed' : ''}"
+             onclick="${revealed ? '' : `doReveal('${key}')`}">
+          <div class="trait-label">${label}</div>
+          ${revealed
+            ? `<div class="trait-value">${esc(value)}</div>`
+            : `<div class="trait-hidden">[ нажмите ]</div>`}
+        </div>
+      `;
+    }).join('');
+    document.getElementById('my-traits').innerHTML = traitsHtml;
+  }
+
+  // Players list
+  const myVote = (gameState.votes || []).find(v => v.voter_id === myId);
+  const voteCounts = {};
+  (gameState.votes || []).forEach(v => {
+    voteCounts[v.target_id] = (voteCounts[v.target_id] || 0) + 1;
+  });
+
+  const playersHtml = gameState.players.map(p => {
+    if (p.id === myId) return ''; // skip self in list
+    const alive = p.is_alive;
+    const votedFor = myVote && myVote.target_id === p.id;
+    const vcount = voteCounts[p.id] || 0;
+
+    let revealedInfo = '';
+    if (p.revealed_card && Object.keys(p.revealed_card).length > 0) {
+      revealedInfo = Object.entries(p.revealed_card).map(([k, v]) =>
+        `<span style="font-size:10px; color:var(--text-dim);">${TRAIT_NAMES[k]}: </span><span style="font-size:10px; color:var(--text-bright); font-family:var(--stamp);">${esc(v)}</span>`
+      ).join(' &nbsp;·&nbsp; ');
+    }
+
+    return `
+      <div class="player-item ${alive ? 'alive' : 'dead'} ${votedFor ? 'voted-for' : ''}"
+           ${isVoting && alive ? `onclick="doVote('${p.id}')" style="cursor:pointer;"` : ''}>
+        <div style="flex:1;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span class="player-name">${esc(p.name)}</span>
+            ${p.is_host ? '<span class="player-badge host">Хост</span>' : ''}
+            ${!alive ? '<span class="player-badge" style="color:var(--danger);">Исключён</span>' : ''}
+          </div>
+          ${revealedInfo ? `<div style="margin-top:4px; line-height:1.6;">${revealedInfo}</div>` : ''}
+        </div>
+        ${isVoting && alive ? `<span class="vote-count">${vcount > 0 ? '▲'.repeat(vcount) : ''}</span>` : ''}
+        ${isVoting && alive ? `<button class="btn vote-btn ${votedFor ? 'btn-danger' : 'btn-ghost'}" onclick="event.stopPropagation(); doVote('${p.id}')">
+          ${votedFor ? '✓ Мой голос' : 'Голос'}
+        </button>` : ''}
+      </div>
+    `;
+  }).join('');
+  document.getElementById('players-list').innerHTML = playersHtml;
+
+  // Host controls
+  const hostCtrl = document.getElementById('host-controls');
+  hostCtrl.style.display = myIsHost ? 'flex' : 'none';
+  if (myIsHost) {
+    hostCtrl.style.flexDirection = 'column';
+    document.getElementById('btn-start-vote').style.display = isVoting ? 'none' : 'inline-flex';
+    document.getElementById('btn-end-vote').style.display = isVoting ? 'inline-flex' : 'none';
+  }
+
+  // Reveal log
+  const log = (gameState.reveal_log || []).slice().reverse();
+  document.getElementById('reveal-log').innerHTML = log.length
+    ? log.map(e => `
+        <div class="log-entry">
+          <span class="log-who">${esc(e.player_name)}</span>
+          <span class="log-trait"> раскрыл ${TRAIT_NAMES[e.trait_key] || e.trait_key}: </span>
+          <span class="log-value">${esc(e.trait_value)}</span>
+        </div>
+      `).join('')
+    : '<div class="log-entry" style="color:var(--text-dim);">Пока ничего не раскрыто</div>';
+}
+
+function renderOver() {
+  const won = gameState.winner === 'survivors';
+  const title = document.getElementById('over-title');
+  const sub = document.getElementById('over-sub');
+
+  title.textContent = won ? 'ВЫЖИЛИ' : 'ПОГИБЛИ';
+  title.className = `game-over-title ${won ? 'win' : 'lose'}`;
+  sub.textContent = won
+    ? 'Оставшиеся попали в бункер. Человечество продолжится.'
+    : 'Бункер так и не был заполнен правильными людьми.';
+
+  const overPlayers = document.getElementById('over-players');
+  overPlayers.innerHTML = gameState.players.map(p => `
+    <div class="player-item ${p.is_alive ? 'alive' : 'dead'}">
+      <span class="player-name">${esc(p.name)}</span>
+      ${p.is_alive ? '<span class="player-badge" style="color:var(--green);">В бункере</span>' : '<span class="player-badge" style="color:var(--danger);">Исключён</span>'}
+    </div>
+  `).join('');
+
+  document.getElementById('host-restart').style.display = myIsHost ? 'block' : 'none';
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────
+function showCreate() {
+  document.getElementById('create-form').style.display = 'block';
+  document.getElementById('join-form').style.display = 'none';
+  document.getElementById('create-name').focus();
+}
+
+function showJoin() {
+  document.getElementById('join-form').style.display = 'block';
+  document.getElementById('create-form').style.display = 'none';
+  document.getElementById('join-code').focus();
+}
+
+function hideAll() {
+  document.getElementById('create-form').style.display = 'none';
+  document.getElementById('join-form').style.display = 'none';
+}
+
+function doCreate() {
+  const name = document.getElementById('create-name').value.trim();
+  if (!name) { notify('Введите имя', 'error'); return; }
+  connectWS(() => send({ action: 'create_room', name }));
+}
+
+function doJoin() {
+  const name = document.getElementById('join-name').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if (!name) { notify('Введите имя', 'error'); return; }
+  if (!code || code.length !== 6) { notify('Введите 6-значный код', 'error'); return; }
+  connectWS(() => send({ action: 'join_room', name, room_id: code }));
+}
+
+function doStart() { send({ action: 'start_game' }); }
+function doStartVoting() { send({ action: 'start_voting' }); }
+function doEndVoting() { send({ action: 'end_voting' }); }
+function doReveal(trait) { send({ action: 'reveal_trait', trait }); }
+function doVote(targetId) { send({ action: 'vote', target_id: targetId }); }
+function doRestart() { send({ action: 'restart' }); }
+
+function copyCode() {
+  const code = document.getElementById('room-code-display').textContent;
+  navigator.clipboard.writeText(code).then(() => notify('Код скопирован: ' + code, 'success'));
+}
+
+// ── UI helpers ─────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function setConnDot(on) {
+  const dot = document.getElementById('conn-dot');
+  if (dot) dot.className = 'conn-dot' + (on ? '' : ' off');
+}
+
+let notifyTimer = null;
+function notify(text, type = 'info', duration = 3000) {
+  const el = document.getElementById('notification');
+  el.textContent = text;
+  el.className = `show ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`;
+  clearTimeout(notifyTimer);
+  notifyTimer = setTimeout(() => { el.className = ''; }, duration);
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── URL code pre-fill ──────────────────────────────────────────────────────
+const urlParams = new URLSearchParams(location.search);
+const codeParam = urlParams.get('room');
+if (codeParam) {
+  showJoin();
+  document.getElementById('join-code').value = codeParam.toUpperCase();
+}
+
+// Enter key handlers
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.getElementById('create-form').style.display !== 'none') doCreate();
+    else if (document.getElementById('join-form').style.display !== 'none') doJoin();
+  }
+});
+</script>
+</body>
+</html>
