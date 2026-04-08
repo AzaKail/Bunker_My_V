@@ -238,6 +238,6 @@ async def websocket_endpoint(ws: WebSocket):
 
 # ─── Static files ──────────────────────────────────────────────────────────────
 
-frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
+frontend_path = os.path.join(os.path.dirname(__file__), ".")
 if os.path.exists(frontend_path):
     app.mount("/", StaticFiles(directory=frontend_path, html=True), name="static")

@@ -417,8 +417,12 @@
 
   .traits-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 12px;
+  }
+
+  @media (max-width: 700px) {
+    .traits-grid { grid-template-columns: repeat(2, 1fr); }
   }
 
   @media (max-width: 480px) {
@@ -838,12 +842,17 @@ let myIsHost = false;
 let gameState = null;
 
 const TRAIT_NAMES = {
-  profession: 'Профессия',
-  health: 'Здоровье',
-  hobby: 'Хобби',
-  luggage: 'Багаж',
-  fact: 'Доп. факт',
-  phobia: 'Фобия',
+  gender:          'Пол',
+  build:           'Телосложение',
+  human_trait:     'Человеческая черта',
+  profession:      'Профессия',
+  health:          'Здоровье',
+  hobby:           'Хобби / Увлечение',
+  phobia:          'Фобия / Страх',
+  large_inventory: 'Крупный инвентарь',
+  backpack:        'Рюкзак',
+  additional_fact: 'Доп. сведение',
+  special_ability: 'Спец. возможность',
 };
 
 // ── WebSocket ──────────────────────────────────────────────────────────────
