@@ -206,6 +206,34 @@ async def websocket_endpoint(ws: WebSocket):
                 await broadcast(room_id, {"type": "game_restarted"})
                 await broadcast_state(room_id)
 
+            # ── HIDE TRAIT (toggle off) ──────────────────────────────────────
+            elif action == "hide_trait":
+                room = g.rooms.get(room_id)
+                if not room:
+                    continue
+                trait = msg.get("trait")
+                ok = g.hide_trait(room, player_id, trait)
+                if ok:
+                    await broadcast_state(room_id)
+
+            # ── OVERRIDE TRAIT (host only) ───────────────────────────────────
+            elif action == "override_trait":
+                room = g.rooms.get(room_id)
+                if not room:
+                    continue
+                host = room.players.get(player_id)
+                if not host or not host.is_host:
+                    await send_to(ws, {"type": "error", "message": "Только хост может менять характеристики"})
+                    continue
+                target_id = msg.get("target_id")
+                trait = msg.get("trait")
+                value = msg.get("value")
+                ok = g.override_trait(room, target_id, trait, value)
+                if ok:
+                    await broadcast_state(room_id)
+                else:
+                    await send_to(ws, {"type": "error", "message": "Неверное значение"})
+
             # ── PING ─────────────────────────────────────────────────────────
             elif action == "ping":
                 await send_to(ws, {"type": "pong"})

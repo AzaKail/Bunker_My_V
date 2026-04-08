@@ -4,6 +4,19 @@ from typing import Optional
 import uuid
 
 
+def _get_trait_pools() -> dict:
+    from content import (GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
+                         HOBBIES, PHOBIAS, LARGE_INVENTORY, BACKPACKS,
+                         ADDITIONAL_FACTS, SPECIAL_ABILITIES)
+    return {
+        'gender': GENDERS, 'build': BUILDS, 'human_trait': HUMAN_TRAITS,
+        'profession': PROFESSIONS, 'health': HEALTH, 'hobby': HOBBIES,
+        'phobia': PHOBIAS, 'large_inventory': LARGE_INVENTORY,
+        'backpack': BACKPACKS, 'additional_fact': ADDITIONAL_FACTS,
+        'special_ability': SPECIAL_ABILITIES,
+    }
+
+
 class GamePhase(str, Enum):
     LOBBY = "lobby"
     PLAYING = "playing"
@@ -87,4 +100,5 @@ class Room:
             "reveal_log": self.reveal_log[-20:],  # last 20 reveals
             "alive_count": len(self.alive_players()),
             "bunker_capacity": self.scenario.get("capacity", 0),
+        "trait_pools": _get_trait_pools(),
         }

@@ -999,7 +999,7 @@ function renderGame() {
   document.getElementById('stat-alive').textContent = gameState.alive_count;
   document.getElementById('stat-capacity').textContent = gameState.bunker_capacity;
 
-  // My card
+  // My card — always visible to owner, eye button toggles visibility to others
   const me = gameState.players.find(p => p.id === myId);
   if (me && me.card) {
     document.getElementById('my-name-display').textContent = me.name;
@@ -1007,12 +1007,14 @@ function renderGame() {
       const revealed = me.revealed_traits.includes(key);
       const value = me.card[key] || '—';
       return `
-        <div class="trait-item ${revealed ? 'revealed' : ''}"
-             onclick="${revealed ? '' : `doReveal('${key}')`}">
+        <div class="trait-item revealed" style="position:relative; padding-right:36px;">
           <div class="trait-label">${label}</div>
-          ${revealed
-            ? `<div class="trait-value">${esc(value)}</div>`
-            : `<div class="trait-hidden">[ нажмите ]</div>`}
+          <div class="trait-value">${esc(value)}</div>
+          <button
+            title="${revealed ? 'Скрыть от других' : 'Показать другим'}"
+            onclick="event.stopPropagation(); ${revealed ? `doHide('${key}')` : `doReveal('${key}')`}"
+            style="position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; font-size:16px; opacity:${revealed ? '1' : '0.35'}; transition:opacity 0.2s;"
+          >${revealed ? '👁️' : '🚫'}</button>
         </div>
       `;
     }).join('');
@@ -1054,6 +1056,7 @@ function renderGame() {
         ${isVoting && alive ? `<button class="btn vote-btn ${votedFor ? 'btn-danger' : 'btn-ghost'}" onclick="event.stopPropagation(); doVote('${p.id}')">
           ${votedFor ? '✓ Мой голос' : 'Голос'}
         </button>` : ''}
+        ${myIsHost ? `<button class="btn vote-btn btn-ghost" style="border-color:#5a5a3a; color:#c8a84b; font-size:10px;" onclick="event.stopPropagation(); openEditModal('${p.id}', ${JSON.stringify(p.name)})">✎ Изменить</button>` : ''}
       </div>
     `;
   }).join('');
@@ -1186,6 +1189,70 @@ document.addEventListener('keydown', e => {
     else if (document.getElementById('join-form').style.display !== 'none') doJoin();
   }
 });
+</script>
+
+<!-- ══════════════ HOST EDIT MODAL ══════════════ -->
+<div id="edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:3000; align-items:center; justify-content:center;">
+  <div style="background:var(--surface); border:1px solid var(--accent); max-width:560px; width:90%; max-height:85vh; overflow-y:auto; position:relative;">
+    <div style="padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <div style="font-size:9px; letter-spacing:3px; color:var(--text-dim); margin-bottom:4px; text-transform:uppercase;">Редактирование досье</div>
+        <div id="edit-modal-name" style="font-family:var(--display); font-size:20px; font-weight:600; letter-spacing:3px; color:var(--accent);"></div>
+      </div>
+      <button onclick="closeEditModal()" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; padding:4px 8px;">✕</button>
+    </div>
+    <div id="edit-modal-traits" style="padding:16px 24px; display:flex; flex-direction:column; gap:12px;"></div>
+  </div>
+</div>
+
+<script>
+
+// ── Host edit modal ────────────────────────────────────────────────────────
+const TRAIT_POOLS = {};  // populated from server state
+
+function openEditModal(targetId, targetName) {
+  if (!myIsHost || !gameState) return;
+  const player = gameState.players.find(p => p.id === targetId);
+  if (!player || !player.card) return;
+
+  document.getElementById('edit-modal-name').textContent = targetName;
+  document.getElementById('edit-modal').style.display = 'flex';
+
+  const pools = gameState.trait_pools || {};
+  const traitsHtml = Object.entries(TRAIT_NAMES).map(([key, label]) => {
+    const current = player.card[key] || '—';
+    const options = (pools[key] || [current]);
+    const opts = options.map(v =>
+      `<option value="${esc(v)}" ${v === current ? 'selected' : ''}>${esc(v)}</option>`
+    ).join('');
+    return `
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="min-width:130px; font-size:9px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase;">${label}</div>
+        <select onchange="doOverride('${targetId}', '${key}', this.value)"
+          style="flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text-bright);
+                 font-family:var(--mono); font-size:12px; padding:8px 10px; outline:none; cursor:pointer;">
+          ${opts}
+        </select>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('edit-modal-traits').innerHTML = traitsHtml;
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').style.display = 'none';
+}
+
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+
+function doHide(trait) { send({ action: 'hide_trait', trait }); }
+function doOverride(targetId, trait, value) {
+  send({ action: 'override_trait', target_id: targetId, trait, value });
+}
+
 </script>
 </body>
 </html>

@@ -162,3 +162,34 @@ def restart_game(room: Room) -> None:
     room.reveal_log = []
     room.last_eliminated = None
     room.winner = None
+
+
+def override_trait(room: "Room", target_id: str, trait_key: str, new_value: str) -> bool:
+    """Host changes any trait value for any player."""
+    from content import (GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
+                         HOBBIES, PHOBIAS, LARGE_INVENTORY, BACKPACKS,
+                         ADDITIONAL_FACTS, SPECIAL_ABILITIES)
+    POOLS = {
+        "gender": GENDERS, "build": BUILDS, "human_trait": HUMAN_TRAITS,
+        "profession": PROFESSIONS, "health": HEALTH, "hobby": HOBBIES,
+        "phobia": PHOBIAS, "large_inventory": LARGE_INVENTORY,
+        "backpack": BACKPACKS, "additional_fact": ADDITIONAL_FACTS,
+        "special_ability": SPECIAL_ABILITIES,
+    }
+    player = room.players.get(target_id)
+    if not player or trait_key not in POOLS:
+        return False
+    if new_value not in POOLS[trait_key]:
+        return False
+    player.card[trait_key] = new_value
+    # If that trait was revealed, update is visible immediately
+    return True
+
+
+def hide_trait(room: "Room", player_id: str, trait_key: str) -> bool:
+    """Player hides a previously revealed trait from others."""
+    player = room.players.get(player_id)
+    if not player or trait_key not in player.revealed_traits:
+        return False
+    player.revealed_traits.remove(trait_key)
+    return True
