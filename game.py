@@ -4,7 +4,30 @@ from content import generate_player_card, generate_scenario
 
 # In-memory storage
 rooms: dict[str, Room] = {}
+users: dict[str, str] = {}  # username -> password (plain for simple demo auth)
 
+
+def register_user(username: str, password: str) -> tuple[bool, str]:
+    username = (username or "").strip()
+    password = (password or "").strip()
+    if len(username) < 3:
+        return False, "Логин должен быть не короче 3 символов"
+    if len(password) < 4:
+        return False, "Пароль должен быть не короче 4 символов"
+    if username in users:
+        return False, "Такой пользователь уже существует"
+    users[username] = password
+    return True, "Регистрация успешна"
+
+
+def login_user(username: str, password: str) -> tuple[bool, str]:
+    username = (username or "").strip()
+    password = (password or "").strip()
+    if username not in users:
+        return False, "Пользователь не найден"
+    if users.get(username) != password:
+        return False, "Неверный пароль"
+    return True, "Вход выполнен"
 
 def create_room(host_name: str) -> tuple[Room, Player]:
     room_id = str(uuid.uuid4())[:6].upper()

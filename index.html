@@ -30,6 +30,12 @@
 
   body {
     background: var(--bg);
+    background-image:
+      linear-gradient(rgba(10,10,10,0.7), rgba(10,10,10,0.85)),
+      url('image/back1.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
     color: var(--text);
     font-family: var(--mono);
     min-height: 100vh;
@@ -66,7 +72,8 @@
 
   /* ── Layout ── */
   #app {
-    max-width: 900px;
+    max-width: 1400px;
+    width: min(96vw, 1400px);
     margin: 0 auto;
     padding: 20px;
     position: relative;
@@ -297,6 +304,19 @@
     font-size: 11px;
     color: var(--text-dim);
     letter-spacing: 1px;
+  }
+
+  .auth-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  @media (max-width: 720px) {
+    .auth-grid {
+      grid-template-columns: 1fr;
+    }
   }
 
   /* ── Lobby ── */
@@ -750,6 +770,25 @@
         Катастрофа уничтожила мир. Вы — группа выживших перед бункером.
         Мест меньше, чем людей. Решайте, кто достоин спастись.
       </p>
+      <hr class="divider">
+      <div class="panel-title" style="margin-bottom:8px;">Аккаунт</div>
+      <div id="auth-status" style="font-size:11px; color:var(--text-dim); letter-spacing:1px; margin-bottom:10px;">
+        Войдите или зарегистрируйтесь для игры
+      </div>
+      <div class="auth-grid">
+        <div>
+          <label>Логин</label>
+          <input type="text" id="auth-username" maxlength="20" placeholder="Ваш логин">
+        </div>
+        <div>
+          <label>Пароль</label>
+          <input type="text" id="auth-password" maxlength="30" placeholder="Ваш пароль">
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="doAuth('login')">Войти</button>
+        <button class="btn btn-ghost" onclick="doAuth('register')">Регистрация</button>
+      </div>
     </div>
 
     <div class="home-actions">
@@ -769,10 +808,7 @@
     <div id="create-form" style="display:none; margin-top:24px;">
       <div class="panel">
         <div class="panel-title">Создать комнату</div>
-        <div class="field">
-          <label>Ваше имя</label>
-          <input type="text" id="create-name" maxlength="20" placeholder="Введите имя...">
-        </div>
+        <p style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">Имя берётся из аккаунта: <span id="create-account-name">—</span></p>
         <div class="btn-row">
           <button class="btn btn-primary" onclick="doCreate()">Создать комнату</button>
           <button class="btn btn-ghost" onclick="hideAll()">Отмена</button>
@@ -788,10 +824,7 @@
           <label>Код комнаты</label>
           <input type="text" id="join-code" maxlength="6" placeholder="XXXXXX" style="text-transform:uppercase; letter-spacing:8px; font-size:24px;">
         </div>
-        <div class="field">
-          <label>Ваше имя</label>
-          <input type="text" id="join-name" maxlength="20" placeholder="Введите имя...">
-        </div>
+        <p style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">Имя берётся из аккаунта: <span id="join-account-name">—</span></p>
         <div class="btn-row">
           <button class="btn btn-primary" onclick="doJoin()">Войти</button>
           <button class="btn btn-ghost" onclick="hideAll()">Отмена</button>
@@ -911,6 +944,7 @@ let myId = null;
 let myRoomId = null;
 let myIsHost = false;
 let gameState = null;
+let authUsername = null;
 
 const TRAIT_NAMES = {
   gender:          'Пол',
@@ -958,6 +992,14 @@ function send(obj) {
   }
 }
 
+function ensureWS(onReady) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    if (onReady) onReady();
+    return;
+  }
+  connectWS(onReady);
+}
+
 function handleMessage(msg) {
   switch (msg.type) {
     case 'joined':
@@ -968,6 +1010,13 @@ function handleMessage(msg) {
       showScreen('lobby');
       break;
 
+    case 'auth_ok':
+      authUsername = msg.username;
+      updateAuthUI();
+      notify(msg.message || `Вход выполнен: ${authUsername}`, 'success');
+      if (codeParam) showJoin();
+      break;
+    
     case 'state':
       gameState = msg.data;
       renderState();
@@ -1012,6 +1061,17 @@ function handleMessage(msg) {
       break;
   }
 }
+
+function updateAuthUI() {
+  const status = document.getElementById('auth-status');
+  const uname = authUsername || '—';
+  status.textContent = authUsername
+    ? `Авторизованы как: ${authUsername}`
+    : 'Войдите или зарегистрируйтесь для игры';
+  document.getElementById('create-account-name').textContent = uname;
+  document.getElementById('join-account-name').textContent = uname;
+}
+
 
 // ── Rendering ──────────────────────────────────────────────────────────────
 function renderState() {
@@ -1202,12 +1262,13 @@ function renderOver() {
 
 // ── Actions ────────────────────────────────────────────────────────────────
 function showCreate() {
+  if (!authUsername) { notify('Сначала войдите в аккаунт', 'error'); return; }
   document.getElementById('create-form').style.display = 'block';
   document.getElementById('join-form').style.display = 'none';
-  document.getElementById('create-name').focus();
 }
 
 function showJoin() {
+  if (!authUsername) { notify('Сначала войдите в аккаунт', 'error'); return; }
   document.getElementById('join-form').style.display = 'block';
   document.getElementById('create-form').style.display = 'none';
   document.getElementById('join-code').focus();
@@ -1219,17 +1280,27 @@ function hideAll() {
 }
 
 function doCreate() {
-  const name = document.getElementById('create-name').value.trim();
-  if (!name) { notify('Введите имя', 'error'); return; }
-  connectWS(() => send({ action: 'create_room', name }));
+  if (!authUsername) { notify('Сначала войдите в аккаунт', 'error'); return; }
+  ensureWS(() => send({ action: 'create_room' }));
 }
 
 function doJoin() {
-  const name = document.getElementById('join-name').value.trim();
   const code = document.getElementById('join-code').value.trim().toUpperCase();
-  if (!name) { notify('Введите имя', 'error'); return; }
+  if (!authUsername) { notify('Сначала войдите в аккаунт', 'error'); return; }
   if (!code || code.length !== 6) { notify('Введите 6-значный код', 'error'); return; }
-  connectWS(() => send({ action: 'join_room', name, room_id: code }));
+  ensureWS(() => send({ action: 'join_room', room_id: code }));
+}
+
+function doAuth(mode) {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value.trim();
+  if (!username) { notify('Введите логин', 'error'); return; }
+  if (!password) { notify('Введите пароль', 'error'); return; }
+  ensureWS(() => send({
+    action: mode === 'register' ? 'register' : 'login',
+    username,
+    password
+  }));
 }
 
 function doStart() { send({ action: 'start_game' }); }
@@ -1272,14 +1343,16 @@ function esc(str) {
 const urlParams = new URLSearchParams(location.search);
 const codeParam = urlParams.get('room');
 if (codeParam) {
-  showJoin();
   document.getElementById('join-code').value = codeParam.toUpperCase();
 }
+updateAuthUI();
 
 // Enter key handlers
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
-    if (document.getElementById('create-form').style.display !== 'none') doCreate();
+    const active = document.activeElement?.id || '';
+    if (active === 'auth-username' || active === 'auth-password') doAuth('login');
+    else if (document.getElementById('create-form').style.display !== 'none') doCreate();
     else if (document.getElementById('join-form').style.display !== 'none') doJoin();
   }
 });
