@@ -61,6 +61,7 @@ async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     player_id: Optional[str] = None
     room_id: Optional[str] = None
+    auth_user: Optional[str] = None
 
     try:
         while True:
@@ -70,7 +71,10 @@ async def websocket_endpoint(ws: WebSocket):
 
             # ── CREATE ROOM ──────────────────────────────────────────────────
             if action == "create_room":
-                name = msg.get("name", "Игрок").strip()[:20]
+                if not auth_user:
+                    await send_to(ws, {"type": "error", "message": "Сначала войдите в аккаунт"})
+                    continue
+                name = auth_user.strip()[:20] or "Игрок"
                 room, player = g.create_room(name)
                 player_id = player.id
                 room_id = room.id
@@ -85,7 +89,10 @@ async def websocket_endpoint(ws: WebSocket):
 
             # ── JOIN ROOM ────────────────────────────────────────────────────
             elif action == "join_room":
-                name = msg.get("name", "Игрок").strip()[:20]
+                if not auth_user:
+                    await send_to(ws, {"type": "error", "message": "Сначала войдите в аккаунт"})
+                    continue
+                name = auth_user.strip()[:20] or "Игрок"
                 rid = msg.get("room_id", "").strip().upper()
                 result, data = g.join_room(rid, name)
                 if result is None:
@@ -102,6 +109,28 @@ async def websocket_endpoint(ws: WebSocket):
                         "is_host": False,
                     })
                     await broadcast_state(room_id)
+
+            # ── AUTH REGISTER ────────────────────────────────────────────────
+            elif action == "register":
+                username = (msg.get("username") or "").strip()
+                password = (msg.get("password") or "").strip()
+                ok, text = g.register_user(username, password)
+                if ok:
+                    auth_user = username
+                    await send_to(ws, {"type": "auth_ok", "username": username, "message": text})
+                else:
+                    await send_to(ws, {"type": "error", "message": text})
+
+            # ── AUTH LOGIN ───────────────────────────────────────────────────
+            elif action == "login":
+                username = (msg.get("username") or "").strip()
+                password = (msg.get("password") or "").strip()
+                ok, text = g.login_user(username, password)
+                if ok:
+                    auth_user = username
+                    await send_to(ws, {"type": "auth_ok", "username": username, "message": text})
+                else:
+                    await send_to(ws, {"type": "error", "message": text})
 
             # ── START GAME ───────────────────────────────────────────────────
             elif action == "start_game":

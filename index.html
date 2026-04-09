@@ -30,6 +30,12 @@
 
   body {
     background: var(--bg);
+    background-image:
+      linear-gradient(rgba(10,10,10,0.7), rgba(10,10,10,0.85)),
+      url('image/back1.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
     color: var(--text);
     font-family: var(--mono);
     min-height: 100vh;
@@ -66,7 +72,8 @@
 
   /* ── Layout ── */
   #app {
-    max-width: 900px;
+    max-width: 1400px;
+    width: min(96vw, 1400px);
     margin: 0 auto;
     padding: 20px;
     position: relative;
@@ -299,6 +306,19 @@
     letter-spacing: 1px;
   }
 
+  .auth-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  @media (max-width: 720px) {
+    .auth-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
   /* ── Lobby ── */
   .room-code {
     font-family: var(--display);
@@ -432,8 +452,7 @@
   .trait-item {
     background: var(--bg);
     border: 1px solid var(--border);
-    padding: 12px;
-    cursor: pointer;
+    padding: 12px 44px 12px 12px;
     transition: all 0.2s;
     position: relative;
   }
@@ -444,7 +463,7 @@
 
   .trait-item.revealed {
     border-color: var(--green);
-    cursor: default;
+    box-shadow: 0 0 0 1px rgba(74, 124, 89, 0.35) inset;
   }
 
   .trait-item.revealed::after {
@@ -453,6 +472,72 @@
     top: 8px; right: 8px;
     color: var(--green);
     font-size: 12px;
+  }
+
+  .trait-action {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .trait-action:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .trait-item.revealed .trait-action {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .revealed-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .revealed-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+  }
+
+  .revealed-table th,
+  .revealed-table td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    font-size: 11px;
+    vertical-align: top;
+  }
+
+  .revealed-table th {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(200, 168, 75, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .revealed-table td {
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .revealed-table .muted {
+    color: var(--text-dim);
   }
 
   .trait-label {
@@ -685,6 +770,25 @@
         Катастрофа уничтожила мир. Вы — группа выживших перед бункером.
         Мест меньше, чем людей. Решайте, кто достоин спастись.
       </p>
+      <hr class="divider">
+      <div class="panel-title" style="margin-bottom:8px;">Аккаунт</div>
+      <div id="auth-status" style="font-size:11px; color:var(--text-dim); letter-spacing:1px; margin-bottom:10px;">
+        Войдите или зарегистрируйтесь для игры
+      </div>
+      <div class="auth-grid">
+        <div>
+          <label>Логин</label>
+          <input type="text" id="auth-username" maxlength="20" placeholder="Ваш логин">
+        </div>
+        <div>
+          <label>Пароль</label>
+          <input type="text" id="auth-password" maxlength="30" placeholder="Ваш пароль">
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-primary" onclick="doAuth('login')">Войти</button>
+        <button class="btn btn-ghost" onclick="doAuth('register')">Регистрация</button>
+      </div>
     </div>
 
     <div class="home-actions">
@@ -704,10 +808,7 @@
     <div id="create-form" style="display:none; margin-top:24px;">
       <div class="panel">
         <div class="panel-title">Создать комнату</div>
-        <div class="field">
-          <label>Ваше имя</label>
-          <input type="text" id="create-name" maxlength="20" placeholder="Введите имя...">
-        </div>
+        <p style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">Имя берётся из аккаунта: <span id="create-account-name">—</span></p>
         <div class="btn-row">
           <button class="btn btn-primary" onclick="doCreate()">Создать комнату</button>
           <button class="btn btn-ghost" onclick="hideAll()">Отмена</button>
@@ -723,10 +824,7 @@
           <label>Код комнаты</label>
           <input type="text" id="join-code" maxlength="6" placeholder="XXXXXX" style="text-transform:uppercase; letter-spacing:8px; font-size:24px;">
         </div>
-        <div class="field">
-          <label>Ваше имя</label>
-          <input type="text" id="join-name" maxlength="20" placeholder="Введите имя...">
-        </div>
+        <p style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">Имя берётся из аккаунта: <span id="join-account-name">—</span></p>
         <div class="btn-row">
           <button class="btn btn-primary" onclick="doJoin()">Войти</button>
           <button class="btn btn-ghost" onclick="hideAll()">Отмена</button>
@@ -800,6 +898,12 @@
     <div class="section-title">Участники</div>
     <div id="players-list" class="player-list"></div>
 
+    <hr class="divider">
+    <div class="section-title">Таблица раскрытий</div>
+    <div class="revealed-table-wrap">
+      <table class="revealed-table" id="revealed-table"></table>
+    </div>
+
     <!-- Host controls -->
     <div id="host-controls" style="display:none; margin-top:24px;">
       <hr class="divider">
@@ -840,6 +944,7 @@ let myId = null;
 let myRoomId = null;
 let myIsHost = false;
 let gameState = null;
+let authUsername = null;
 
 const TRAIT_NAMES = {
   gender:          'Пол',
@@ -887,6 +992,14 @@ function send(obj) {
   }
 }
 
+function ensureWS(onReady) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    if (onReady) onReady();
+    return;
+  }
+  connectWS(onReady);
+}
+
 function handleMessage(msg) {
   switch (msg.type) {
     case 'joined':
@@ -895,6 +1008,13 @@ function handleMessage(msg) {
       myIsHost = msg.is_host;
       document.getElementById('room-code-display').textContent = myRoomId;
       showScreen('lobby');
+      break;
+
+    case 'auth_ok':
+      authUsername = msg.username;
+      updateAuthUI();
+      notify(msg.message || `Вход выполнен: ${authUsername}`, 'success');
+      if (codeParam) showJoin();
       break;
 
     case 'state':
@@ -940,6 +1060,16 @@ function handleMessage(msg) {
       notify(`${msg.player_name} покинул игру`, 'info');
       break;
   }
+}
+
+function updateAuthUI() {
+  const status = document.getElementById('auth-status');
+  const uname = authUsername || '—';
+  status.textContent = authUsername
+    ? `Авторизованы как: ${authUsername}`
+    : 'Войдите или зарегистрируйтесь для игры';
+  document.getElementById('create-account-name').textContent = uname;
+  document.getElementById('join-account-name').textContent = uname;
 }
 
 // ── Rendering ──────────────────────────────────────────────────────────────
@@ -1007,14 +1137,14 @@ function renderGame() {
       const revealed = me.revealed_traits.includes(key);
       const value = me.card[key] || '—';
       return `
-        <div class="trait-item revealed" style="position:relative; padding-right:36px;">
+        <div class="trait-item ${revealed ? 'revealed' : ''}">
           <div class="trait-label">${label}</div>
           <div class="trait-value">${esc(value)}</div>
           <button
             title="${revealed ? 'Скрыть от других' : 'Показать другим'}"
             onclick="event.stopPropagation(); ${revealed ? `doHide('${key}')` : `doReveal('${key}')`}"
-            style="position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; font-size:16px; opacity:${revealed ? '1' : '0.35'}; transition:opacity 0.2s;"
-          >${revealed ? '👁️' : '🚫'}</button>
+            class="trait-action"
+          >👁</button>
         </div>
       `;
     }).join('');
@@ -1029,7 +1159,6 @@ function renderGame() {
   });
 
   const playersHtml = gameState.players.map(p => {
-    if (p.id === myId) return ''; // skip self in list
     const alive = p.is_alive;
     const votedFor = myVote && myVote.target_id === p.id;
     const vcount = voteCounts[p.id] || 0;
@@ -1048,12 +1177,13 @@ function renderGame() {
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
             <span class="player-name">${esc(p.name)}</span>
             ${p.is_host ? '<span class="player-badge host">Хост</span>' : ''}
+            ${p.id === myId ? '<span class="player-badge">Вы</span>' : ''}
             ${!alive ? '<span class="player-badge" style="color:var(--danger);">Исключён</span>' : ''}
           </div>
           ${revealedInfo ? `<div style="margin-top:4px; line-height:1.6;">${revealedInfo}</div>` : ''}
         </div>
-        ${isVoting && alive ? `<span class="vote-count">${vcount > 0 ? '▲'.repeat(vcount) : ''}</span>` : ''}
-        ${isVoting && alive ? `<button class="btn vote-btn ${votedFor ? 'btn-danger' : 'btn-ghost'}" onclick="event.stopPropagation(); doVote('${p.id}')">
+        ${isVoting && alive && p.id !== myId ? `<span class="vote-count">${vcount > 0 ? '▲'.repeat(vcount) : ''}</span>` : ''}
+        ${isVoting && alive && p.id !== myId ? `<button class="btn vote-btn ${votedFor ? 'btn-danger' : 'btn-ghost'}" onclick="event.stopPropagation(); doVote('${p.id}')">
           ${votedFor ? '✓ Мой голос' : 'Голос'}
         </button>` : ''}
         ${myIsHost ? `<button class="btn vote-btn btn-ghost" style="border-color:#5a5a3a; color:#c8a84b; font-size:10px;" onclick="event.stopPropagation(); openEditModal('${p.id}', ${JSON.stringify(p.name)})">✎ Изменить</button>` : ''}
@@ -1061,6 +1191,28 @@ function renderGame() {
     `;
   }).join('');
   document.getElementById('players-list').innerHTML = playersHtml;
+
+  const columns = Object.entries(TRAIT_NAMES);
+  const header = `
+    <tr>
+      <th>Игрок</th>
+      ${columns.map(([, label]) => `<th>${esc(label)}</th>`).join('')}
+    </tr>
+  `;
+  const rows = gameState.players.map(p => {
+    return `
+      <tr>
+        <td>${esc(p.name)}${p.id === myId ? ' (вы)' : ''}${p.is_alive ? '' : ' [исключён]'}</td>
+        ${columns.map(([key]) => {
+          const isMine = p.id === myId;
+          const isRevealed = (p.revealed_traits || []).includes(key);
+          const val = isMine || isRevealed ? (p.card?.[key] || p.revealed_card?.[key] || '—') : '—';
+          return `<td class="${isMine || isRevealed ? '' : 'muted'}">${esc(val)}</td>`;
+        }).join('')}
+      </tr>
+    `;
+  }).join('');
+  document.getElementById('revealed-table').innerHTML = header + rows;
 
   // Host controls
   const hostCtrl = document.getElementById('host-controls');
@@ -1108,12 +1260,13 @@ function renderOver() {
 
 // ── Actions ────────────────────────────────────────────────────────────────
 function showCreate() {
+  if (!authUsername) { notify('Сначала войдите в аккаунт', 'error'); return; }
   document.getElementById('create-form').style.display = 'block';
   document.getElementById('join-form').style.display = 'none';
-  document.getElementById('create-name').focus();
 }
 
 function showJoin() {
+  if (!authUsername) { notify('Сначала войдите в аккаунт', 'error'); return; }
   document.getElementById('join-form').style.display = 'block';
   document.getElementById('create-form').style.display = 'none';
   document.getElementById('join-code').focus();
@@ -1125,17 +1278,27 @@ function hideAll() {
 }
 
 function doCreate() {
-  const name = document.getElementById('create-name').value.trim();
-  if (!name) { notify('Введите имя', 'error'); return; }
-  connectWS(() => send({ action: 'create_room', name }));
+  if (!authUsername) { notify('Сначала войдите в аккаунт', 'error'); return; }
+  ensureWS(() => send({ action: 'create_room' }));
 }
 
 function doJoin() {
-  const name = document.getElementById('join-name').value.trim();
   const code = document.getElementById('join-code').value.trim().toUpperCase();
-  if (!name) { notify('Введите имя', 'error'); return; }
+  if (!authUsername) { notify('Сначала войдите в аккаунт', 'error'); return; }
   if (!code || code.length !== 6) { notify('Введите 6-значный код', 'error'); return; }
-  connectWS(() => send({ action: 'join_room', name, room_id: code }));
+  ensureWS(() => send({ action: 'join_room', room_id: code }));
+}
+
+function doAuth(mode) {
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value.trim();
+  if (!username) { notify('Введите логин', 'error'); return; }
+  if (!password) { notify('Введите пароль', 'error'); return; }
+  ensureWS(() => send({
+    action: mode === 'register' ? 'register' : 'login',
+    username,
+    password
+  }));
 }
 
 function doStart() { send({ action: 'start_game' }); }
@@ -1178,14 +1341,16 @@ function esc(str) {
 const urlParams = new URLSearchParams(location.search);
 const codeParam = urlParams.get('room');
 if (codeParam) {
-  showJoin();
   document.getElementById('join-code').value = codeParam.toUpperCase();
 }
+updateAuthUI();
 
 // Enter key handlers
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
-    if (document.getElementById('create-form').style.display !== 'none') doCreate();
+    const active = document.activeElement?.id || '';
+    if (active === 'auth-username' || active === 'auth-password') doAuth('login');
+    else if (document.getElementById('create-form').style.display !== 'none') doCreate();
     else if (document.getElementById('join-form').style.display !== 'none') doJoin();
   }
 });
