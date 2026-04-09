@@ -89,11 +89,16 @@ async def websocket_endpoint(ws: WebSocket):
 
             # ── JOIN ROOM ────────────────────────────────────────────────────
             elif action == "join_room":
-                if not auth_user:
-                    await send_to(ws, {"type": "error", "message": "Сначала войдите в аккаунт"})
-                    continue
-                name = auth_user.strip()[:20] or "Игрок"
                 rid = msg.get("room_id", "").strip().upper()
+                if auth_user:
+                    name = auth_user.strip()[:20] or "Игрок"
+                else:
+                    # Guest join: require a nickname
+                    guest_name = (msg.get("guest_name") or "").strip()[:20]
+                    if not guest_name:
+                        await send_to(ws, {"type": "need_guest_name", "room_id": rid})
+                        continue
+                    name = guest_name or "Гость"
                 result, data = g.join_room(rid, name)
                 if result is None:
                     await send_to(ws, {"type": "error", "message": data})
@@ -295,6 +300,17 @@ async def websocket_endpoint(ws: WebSocket):
 
 # ─── Static files ──────────────────────────────────────────────────────────────
 
-frontend_path = os.path.join(os.path.dirname(__file__), ".")
-if os.path.exists(frontend_path):
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="static")
+base_path = os.path.dirname(os.path.abspath(__file__))
+static_path = os.path.join(base_path, "static")
+
+# Serve /static/ directory (CSS, JS assets)
+if os.path.exists(static_path):
+    app.mount("/static", StaticFiles(directory=static_path), name="static_assets")
+
+# Explicit index route
+@app.get("/")
+async def serve_index():
+    return FileResponse(os.path.join(base_path, "index.html"))
+
+# Fallback for /image/ etc.
+app.mount("/", StaticFiles(directory=base_path, html=True), name="root_static")
