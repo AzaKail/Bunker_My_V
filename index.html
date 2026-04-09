@@ -432,8 +432,7 @@
   .trait-item {
     background: var(--bg);
     border: 1px solid var(--border);
-    padding: 12px;
-    cursor: pointer;
+    padding: 12px 44px 12px 12px;
     transition: all 0.2s;
     position: relative;
   }
@@ -444,7 +443,7 @@
 
   .trait-item.revealed {
     border-color: var(--green);
-    cursor: default;
+    box-shadow: 0 0 0 1px rgba(74, 124, 89, 0.35) inset;
   }
 
   .trait-item.revealed::after {
@@ -453,6 +452,72 @@
     top: 8px; right: 8px;
     color: var(--green);
     font-size: 12px;
+  }
+
+  .trait-action {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .trait-action:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .trait-item.revealed .trait-action {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .revealed-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .revealed-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+  }
+
+  .revealed-table th,
+  .revealed-table td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    font-size: 11px;
+    vertical-align: top;
+  }
+
+  .revealed-table th {
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(200, 168, 75, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .revealed-table td {
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .revealed-table .muted {
+    color: var(--text-dim);
   }
 
   .trait-label {
@@ -800,6 +865,12 @@
     <div class="section-title">Участники</div>
     <div id="players-list" class="player-list"></div>
 
+    <hr class="divider">
+    <div class="section-title">Таблица раскрытий</div>
+    <div class="revealed-table-wrap">
+      <table class="revealed-table" id="revealed-table"></table>
+    </div>
+    
     <!-- Host controls -->
     <div id="host-controls" style="display:none; margin-top:24px;">
       <hr class="divider">
@@ -1007,14 +1078,14 @@ function renderGame() {
       const revealed = me.revealed_traits.includes(key);
       const value = me.card[key] || '—';
       return `
-        <div class="trait-item revealed" style="position:relative; padding-right:36px;">
+        <div class="trait-item ${revealed ? 'revealed' : ''}">
           <div class="trait-label">${label}</div>
           <div class="trait-value">${esc(value)}</div>
           <button
             title="${revealed ? 'Скрыть от других' : 'Показать другим'}"
             onclick="event.stopPropagation(); ${revealed ? `doHide('${key}')` : `doReveal('${key}')`}"
-            style="position:absolute; top:8px; right:8px; background:none; border:none; cursor:pointer; font-size:16px; opacity:${revealed ? '1' : '0.35'}; transition:opacity 0.2s;"
-          >${revealed ? '👁️' : '🚫'}</button>
+            class="trait-action"
+          >👁</button>
         </div>
       `;
     }).join('');
@@ -1029,7 +1100,6 @@ function renderGame() {
   });
 
   const playersHtml = gameState.players.map(p => {
-    if (p.id === myId) return ''; // skip self in list
     const alive = p.is_alive;
     const votedFor = myVote && myVote.target_id === p.id;
     const vcount = voteCounts[p.id] || 0;
@@ -1048,12 +1118,13 @@ function renderGame() {
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
             <span class="player-name">${esc(p.name)}</span>
             ${p.is_host ? '<span class="player-badge host">Хост</span>' : ''}
+            ${p.id === myId ? '<span class="player-badge">Вы</span>' : ''}
             ${!alive ? '<span class="player-badge" style="color:var(--danger);">Исключён</span>' : ''}
           </div>
           ${revealedInfo ? `<div style="margin-top:4px; line-height:1.6;">${revealedInfo}</div>` : ''}
         </div>
-        ${isVoting && alive ? `<span class="vote-count">${vcount > 0 ? '▲'.repeat(vcount) : ''}</span>` : ''}
-        ${isVoting && alive ? `<button class="btn vote-btn ${votedFor ? 'btn-danger' : 'btn-ghost'}" onclick="event.stopPropagation(); doVote('${p.id}')">
+        ${isVoting && alive && p.id !== myId ? `<span class="vote-count">${vcount > 0 ? '▲'.repeat(vcount) : ''}</span>` : ''}
+        ${isVoting && alive && p.id !== myId ? `<button class="btn vote-btn ${votedFor ? 'btn-danger' : 'btn-ghost'}" onclick="event.stopPropagation(); doVote('${p.id}')">
           ${votedFor ? '✓ Мой голос' : 'Голос'}
         </button>` : ''}
         ${myIsHost ? `<button class="btn vote-btn btn-ghost" style="border-color:#5a5a3a; color:#c8a84b; font-size:10px;" onclick="event.stopPropagation(); openEditModal('${p.id}', ${JSON.stringify(p.name)})">✎ Изменить</button>` : ''}
@@ -1061,6 +1132,29 @@ function renderGame() {
     `;
   }).join('');
   document.getElementById('players-list').innerHTML = playersHtml;
+
+  const columns = Object.entries(TRAIT_NAMES);
+  const header = `
+    <tr>
+      <th>Игрок</th>
+      ${columns.map(([, label]) => `<th>${esc(label)}</th>`).join('')}
+    </tr>
+  `;
+  const rows = gameState.players.map(p => {
+    return `
+      <tr>
+        <td>${esc(p.name)}${p.id === myId ? ' (вы)' : ''}${p.is_alive ? '' : ' [исключён]'}</td>
+        ${columns.map(([key]) => {
+          const isMine = p.id === myId;
+          const isRevealed = (p.revealed_traits || []).includes(key);
+          const val = isMine || isRevealed ? (p.card?.[key] || p.revealed_card?.[key] || '—') : '—';
+          return `<td class="${isMine || isRevealed ? '' : 'muted'}">${esc(val)}</td>`;
+        }).join('')}
+      </tr>
+    `;
+  }).join('');
+  document.getElementById('revealed-table').innerHTML = header + rows;
+
 
   // Host controls
   const hostCtrl = document.getElementById('host-controls');

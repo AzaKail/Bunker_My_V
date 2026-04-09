@@ -51,7 +51,11 @@ def start_game(room: Room) -> bool:
 
 
 def reveal_trait(room: Room, player_id: str, trait_key: str) -> bool:
-    VALID_TRAITS = {"profession", "health", "hobby", "luggage", "fact", "phobia"}
+    VALID_TRAITS = {
+        "gender", "build", "human_trait", "profession", "health",
+        "hobby", "phobia", "large_inventory", "backpack",
+        "additional_fact", "special_ability",
+    }
     player = room.players.get(player_id)
     if not player or not player.is_alive:
         return False
