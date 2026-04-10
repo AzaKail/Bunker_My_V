@@ -22,7 +22,6 @@ const TRAIT_NAMES = {
 };
 
 // Trait keys that have descriptions
-const DESCRIBED_TRAITS = ['profession', 'special_ability'];
 
 // ── WebSocket ──────────────────────────────────────────────────────────────
 function connectWS(onOpen) {

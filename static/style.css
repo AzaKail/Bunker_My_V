@@ -22,7 +22,7 @@ body {
   background: var(--bg);
   background-image:
     linear-gradient(rgba(10,10,10,0.7), rgba(10,10,10,0.85)),
-    url('image/back1.png');
+    url('/image/back1.png');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
