@@ -209,7 +209,10 @@ def override_trait(room: "Room", target_id: str, trait_key: str, new_value: str)
     if new_value not in POOLS[trait_key]:
         return False
     player.card[trait_key] = new_value
-    # If that trait was revealed, update is visible immediately
+    # If that trait is in reveal_log, update the logged value too
+    for entry in room.reveal_log:
+        if entry["player_id"] == target_id and entry["trait_key"] == trait_key:
+            entry["trait_value"] = new_value
     return True
 
 

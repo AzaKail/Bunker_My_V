@@ -5,7 +5,7 @@ let myRoomId = null;
 let myIsHost = false;
 let gameState = null;
 let authUsername = null;
-let pendingGuestRoomId = null;  // room waiting for guest nickname
+let pendingGuestRoomId = null;
 
 const TRAIT_NAMES = {
   gender:          'Пол',
@@ -21,43 +21,26 @@ const TRAIT_NAMES = {
   special_ability: 'Спец. возможность',
 };
 
+// Trait keys that have descriptions
+const DESCRIBED_TRAITS = ['profession', 'special_ability'];
+
 // ── WebSocket ──────────────────────────────────────────────────────────────
 function connectWS(onOpen) {
   const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
   const url = `${protocol}://${location.host}/ws`;
   ws = new WebSocket(url);
-
-  ws.onopen = () => {
-    setConnDot(true);
-    if (onOpen) onOpen();
-  };
-
-  ws.onclose = () => {
-    setConnDot(false);
-    notify('Соединение потеряно. Обновите страницу.', 'error', 5000);
-  };
-
-  ws.onerror = () => {
-    notify('Ошибка подключения', 'error');
-  };
-
-  ws.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    handleMessage(msg);
-  };
+  ws.onopen = () => { setConnDot(true); if (onOpen) onOpen(); };
+  ws.onclose = () => { setConnDot(false); notify('Соединение потеряно. Обновите страницу.', 'error', 5000); };
+  ws.onerror = () => notify('Ошибка подключения', 'error');
+  ws.onmessage = (e) => handleMessage(JSON.parse(e.data));
 }
 
 function send(obj) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify(obj));
-  }
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
 }
 
 function ensureWS(onReady) {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    if (onReady) onReady();
-    return;
-  }
+  if (ws && ws.readyState === WebSocket.OPEN) { if (onReady) onReady(); return; }
   connectWS(onReady);
 }
 
@@ -70,58 +53,42 @@ function handleMessage(msg) {
       document.getElementById('room-code-display').textContent = myRoomId;
       showScreen('lobby');
       break;
-
     case 'auth_ok':
       authUsername = msg.username;
       updateAuthUI();
       notify(msg.message || `Вход выполнен: ${authUsername}`, 'success');
       if (codeParam) showJoin();
       break;
-
     case 'need_guest_name':
-      // Server wants a nickname for guest join
       pendingGuestRoomId = msg.room_id;
       openGuestModal();
       break;
-
     case 'state':
       gameState = msg.data;
       renderState();
       break;
-
     case 'error':
       notify(msg.message, 'error');
       break;
-
     case 'game_started':
       notify('Игра началась! Карточки розданы.', 'success');
       break;
-
     case 'trait_revealed':
-      if (msg.data && msg.data.player_id !== myId) {
+      if (msg.data && msg.data.player_id !== myId)
         notify(`${msg.data.player_name} раскрыл: ${TRAIT_NAMES[msg.data.trait_key] || msg.data.trait_key}`, 'info');
-      }
       break;
-
     case 'voting_started':
       notify('⚡ Голосование началось! Выберите кандидата на исключение.', 'error');
       break;
-
     case 'player_eliminated':
       notify(`🚪 ${msg.player_name} исключён из бункера.`, 'error', 4000);
       break;
-
     case 'no_elimination':
       notify('Голоса не совпали — никто не исключён.', 'info');
       break;
-
-    case 'game_over':
-      break;
-
     case 'game_restarted':
       notify('Новая игра!', 'success');
       break;
-
     case 'player_left':
       notify(`${msg.player_name} покинул игру`, 'info');
       break;
@@ -129,12 +96,10 @@ function handleMessage(msg) {
 }
 
 function updateAuthUI() {
-  const status = document.getElementById('auth-status');
-  const uname = authUsername || '—';
-  status.textContent = authUsername
+  document.getElementById('auth-status').textContent = authUsername
     ? `Авторизованы как: ${authUsername}`
     : 'Войдите или зарегистрируйтесь чтобы создавать комнаты';
-  document.getElementById('create-account-name').textContent = uname;
+  document.getElementById('create-account-name').textContent = authUsername || '—';
   document.getElementById('join-account-name').textContent = authUsername || '(гость)';
 }
 
@@ -142,36 +107,71 @@ function updateAuthUI() {
 function renderState() {
   if (!gameState) return;
   const phase = gameState.phase;
-
-  if (phase === 'lobby') {
-    showScreen('lobby');
-    renderLobby();
-  } else if (phase === 'playing' || phase === 'voting') {
-    showScreen('game');
-    renderGame();
-  } else if (phase === 'finished') {
-    showScreen('game');
-    renderGame();
-    showScreen('over');
-    renderOver();
-  }
+  if (phase === 'lobby') { showScreen('lobby'); renderLobby(); }
+  else if (phase === 'playing' || phase === 'voting') { showScreen('game'); renderGame(); }
+  else if (phase === 'finished') { showScreen('game'); renderGame(); showScreen('over'); renderOver(); }
 }
 
 function renderLobby() {
   if (!gameState) return;
-  const container = document.getElementById('lobby-players');
-  container.innerHTML = gameState.players.map(p => `
+  document.getElementById('lobby-players').innerHTML = gameState.players.map(p => `
     <div class="player-item ${p.id === myId ? 'you' : 'alive'}">
       <span class="player-name">${esc(p.name)}</span>
       ${p.is_host ? '<span class="player-badge host">Хост</span>' : ''}
       ${p.id === myId ? '<span class="player-badge">Вы</span>' : ''}
     </div>
   `).join('');
-
   document.getElementById('host-start').style.display = myIsHost ? 'block' : 'none';
   document.getElementById('wait-start').style.display = myIsHost ? 'none' : 'block';
 }
 
+// ── Tooltip helpers ────────────────────────────────────────────────────────
+let tooltipTimer = null;
+let activeTooltip = null;
+
+function attachTooltip(el, text) {
+  if (!text) return;
+  el.addEventListener('mouseenter', () => {
+    tooltipTimer = setTimeout(() => {
+      removeTooltip();
+      const tip = document.createElement('div');
+      tip.className = 'trait-tooltip';
+      tip.textContent = text;
+      document.body.appendChild(tip);
+      const r = el.getBoundingClientRect();
+      tip.style.left = r.left + 'px';
+      tip.style.top = (r.bottom + 6 + window.scrollY) + 'px';
+      // keep within viewport
+      const tipR = tip.getBoundingClientRect();
+      if (tipR.right > window.innerWidth - 8)
+        tip.style.left = (window.innerWidth - tipR.width - 8) + 'px';
+      activeTooltip = tip;
+    }, 1200);
+  });
+  el.addEventListener('mouseleave', () => {
+    clearTimeout(tooltipTimer);
+    removeTooltip();
+  });
+}
+
+function removeTooltip() {
+  if (activeTooltip) { activeTooltip.remove(); activeTooltip = null; }
+}
+
+function makeValueWithTooltip(key, value) {
+  const desc = (typeof ALL_DESCRIPTIONS !== 'undefined') ? ALL_DESCRIPTIONS[value] : null;
+  if (!desc || !DESCRIBED_TRAITS.includes(key)) return esc(value);
+  // return span that will get tooltip attached after insertion
+  return `<span class="has-tooltip" data-tip="${esc(desc)}">${esc(value)} <span class="tip-icon">ℹ</span></span>`;
+}
+
+function activateTooltips(container) {
+  container.querySelectorAll('.has-tooltip').forEach(el => {
+    attachTooltip(el, el.dataset.tip);
+  });
+}
+
+// ── Main game render ───────────────────────────────────────────────────────
 function renderGame() {
   if (!gameState) return;
   const phase = gameState.phase;
@@ -195,17 +195,18 @@ function renderGame() {
   document.getElementById('stat-alive').textContent = gameState.alive_count;
   document.getElementById('stat-capacity').textContent = gameState.bunker_capacity;
 
-  // My card
+  // My card — with tooltips on profession & special_ability
   const me = gameState.players.find(p => p.id === myId);
   if (me && me.card) {
     document.getElementById('my-name-display').textContent = me.name;
-    const traitsHtml = Object.entries(TRAIT_NAMES).map(([key, label]) => {
+    const myCardEl = document.getElementById('my-traits');
+    myCardEl.innerHTML = Object.entries(TRAIT_NAMES).map(([key, label]) => {
       const revealed = me.revealed_traits.includes(key);
       const value = me.card[key] || '—';
       return `
         <div class="trait-item ${revealed ? 'revealed' : ''}">
           <div class="trait-label">${label}</div>
-          <div class="trait-value">${esc(value)}</div>
+          <div class="trait-value">${makeValueWithTooltip(key, value)}</div>
           <button
             title="${revealed ? 'Скрыть от других' : 'Показать другим'}"
             onclick="event.stopPropagation(); ${revealed ? `doHide('${key}')` : `doReveal('${key}')`}"
@@ -214,72 +215,45 @@ function renderGame() {
         </div>
       `;
     }).join('');
-    document.getElementById('my-traits').innerHTML = traitsHtml;
+    activateTooltips(myCardEl);
   }
 
   // Players list
   const myVote = (gameState.votes || []).find(v => v.voter_id === myId);
   const voteCounts = {};
-  (gameState.votes || []).forEach(v => {
-    voteCounts[v.target_id] = (voteCounts[v.target_id] || 0) + 1;
-  });
+  (gameState.votes || []).forEach(v => { voteCounts[v.target_id] = (voteCounts[v.target_id] || 0) + 1; });
 
-  const playersHtml = gameState.players.map(p => {
+  document.getElementById('players-list').innerHTML = gameState.players.map(p => {
     const alive = p.is_alive;
     const votedFor = myVote && myVote.target_id === p.id;
     const vcount = voteCounts[p.id] || 0;
-
     let revealedInfo = '';
     if (p.revealed_card && Object.keys(p.revealed_card).length > 0) {
       revealedInfo = Object.entries(p.revealed_card).map(([k, v]) =>
-        `<span style="font-size:10px; color:var(--text-dim);">${TRAIT_NAMES[k]}: </span><span style="font-size:10px; color:var(--text-bright); font-family:var(--stamp);">${esc(v)}</span>`
+        `<span style="font-size:10px;color:var(--text-dim);">${TRAIT_NAMES[k]}: </span><span style="font-size:10px;color:var(--text-bright);font-family:var(--stamp);">${esc(v)}</span>`
       ).join(' &nbsp;·&nbsp; ');
     }
-
     return `
       <div class="player-item ${alive ? 'alive' : 'dead'} ${votedFor ? 'voted-for' : ''}"
            ${isVoting && alive ? `onclick="doVote('${p.id}')" style="cursor:pointer;"` : ''}>
         <div style="flex:1;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <span class="player-name">${esc(p.name)}</span>
             ${p.is_host ? '<span class="player-badge host">Хост</span>' : ''}
             ${p.id === myId ? '<span class="player-badge">Вы</span>' : ''}
             ${!alive ? '<span class="player-badge" style="color:var(--danger);">Исключён</span>' : ''}
           </div>
-          ${revealedInfo ? `<div style="margin-top:4px; line-height:1.6;">${revealedInfo}</div>` : ''}
+          ${revealedInfo ? `<div style="margin-top:4px;line-height:1.6;">${revealedInfo}</div>` : ''}
         </div>
         ${isVoting && alive && p.id !== myId ? `<span class="vote-count">${vcount > 0 ? '▲'.repeat(vcount) : ''}</span>` : ''}
-        ${isVoting && alive && p.id !== myId ? `<button class="btn vote-btn ${votedFor ? 'btn-danger' : 'btn-ghost'}" onclick="event.stopPropagation(); doVote('${p.id}')">
-          ${votedFor ? '✓ Мой голос' : 'Голос'}
-        </button>` : ''}
-        ${myIsHost ? `<button class="btn vote-btn btn-ghost" style="border-color:#5a5a3a; color:#c8a84b; font-size:10px;" onclick="event.stopPropagation(); openEditModal('${p.id}', ${JSON.stringify(p.name)})">✎ Изменить</button>` : ''}
+        ${isVoting && alive && p.id !== myId ? `<button class="btn vote-btn ${votedFor ? 'btn-danger' : 'btn-ghost'}" onclick="event.stopPropagation();doVote('${p.id}')">${votedFor ? '✓ Мой голос' : 'Голос'}</button>` : ''}
+        ${myIsHost && !isVoting ? `<button class="btn vote-btn btn-ghost" style="border-color:#4a4a2a;color:var(--accent);font-size:10px;margin-left:auto;" onclick="event.stopPropagation();openFullEditModal('${p.id}')">✎</button>` : ''}
       </div>
     `;
   }).join('');
-  document.getElementById('players-list').innerHTML = playersHtml;
 
-  // Revealed table
-  const columns = Object.entries(TRAIT_NAMES);
-  const header = `
-    <tr>
-      <th>Игрок</th>
-      ${columns.map(([, label]) => `<th>${esc(label)}</th>`).join('')}
-    </tr>
-  `;
-  const rows = gameState.players.map(p => {
-    return `
-      <tr>
-        <td>${esc(p.name)}${p.id === myId ? ' (вы)' : ''}${p.is_alive ? '' : ' [исключён]'}</td>
-        ${columns.map(([key]) => {
-          const isMine = p.id === myId;
-          const isRevealed = (p.revealed_traits || []).includes(key);
-          const val = isMine || isRevealed ? (p.card?.[key] || p.revealed_card?.[key] || '—') : '—';
-          return `<td class="${isMine || isRevealed ? '' : 'muted'}">${esc(val)}</td>`;
-        }).join('')}
-      </tr>
-    `;
-  }).join('');
-  document.getElementById('revealed-table').innerHTML = header + rows;
+  // ── Revealed table — only revealed data (not mine by default) ──
+  renderRevealedTable();
 
   // Host controls
   const hostCtrl = document.getElementById('host-controls');
@@ -298,32 +272,176 @@ function renderGame() {
           <span class="log-who">${esc(e.player_name)}</span>
           <span class="log-trait"> раскрыл ${TRAIT_NAMES[e.trait_key] || e.trait_key}: </span>
           <span class="log-value">${esc(e.trait_value)}</span>
-        </div>
-      `).join('')
+        </div>`).join('')
     : '<div class="log-entry" style="color:var(--text-dim);">Пока ничего не раскрыто</div>';
+}
+
+// ── Revealed table: only publicly revealed traits ──────────────────────────
+function renderRevealedTable() {
+  if (!gameState) return;
+  const columns = Object.entries(TRAIT_NAMES);
+  const tableEl = document.getElementById('revealed-table');
+
+  // Collect which columns have ANY revealed data
+  const visibleCols = columns.filter(([key]) =>
+    gameState.players.some(p => (p.revealed_traits || []).includes(key))
+  );
+
+  if (visibleCols.length === 0) {
+    tableEl.innerHTML = `
+      <tr><td colspan="${visibleCols.length + 1}" style="color:var(--text-dim);padding:16px;text-align:center;letter-spacing:2px;font-size:11px;">
+        Никто ещё ничего не раскрыл
+      </td></tr>`;
+    return;
+  }
+
+  const header = `<tr>
+    <th>Игрок</th>
+    ${visibleCols.map(([, label]) => `<th>${esc(label)}</th>`).join('')}
+  </tr>`;
+
+  const rows = gameState.players.map(p => {
+    // Only show rows where player has at least one revealed trait
+    const hasAny = visibleCols.some(([key]) => (p.revealed_traits || []).includes(key));
+    if (!hasAny) return '';
+
+    const cells = visibleCols.map(([key]) => {
+      const isRevealed = (p.revealed_traits || []).includes(key);
+      if (!isRevealed) return `<td class="muted">—</td>`;
+      const val = p.revealed_card?.[key] || p.card?.[key] || '—';
+      // host can click cell to edit
+      const editAttr = myIsHost
+        ? `onclick="hostEditCell('${p.id}','${key}')" style="cursor:pointer;" title="Нажмите чтобы изменить"`
+        : '';
+      const desc = (typeof ALL_DESCRIPTIONS !== 'undefined') ? ALL_DESCRIPTIONS[val] : null;
+      const tipHtml = desc && DESCRIBED_TRAITS.includes(key)
+        ? `<span class="has-tooltip" data-tip="${esc(desc)}">${esc(val)} <span class="tip-icon">ℹ</span></span>`
+        : esc(val);
+      return `<td class="revealed-cell ${myIsHost ? 'host-editable' : ''}" ${editAttr}>${tipHtml}</td>`;
+    }).join('');
+
+    return `<tr>
+      <td>${esc(p.name)}${p.id === myId ? ' <span style="color:var(--accent);font-size:9px;">(вы)</span>' : ''}${!p.is_alive ? ' <span style="color:var(--danger);font-size:9px;">[исключён]</span>' : ''}</td>
+      ${cells}
+    </tr>`;
+  }).join('');
+
+  tableEl.innerHTML = header + rows;
+  activateTooltips(tableEl);
+
+  // Update host hint
+  const hint = document.getElementById('table-hint-host');
+  if (hint) hint.textContent = myIsHost ? '· нажмите на ячейку чтобы изменить' : '';
 }
 
 function renderOver() {
   const won = gameState.winner === 'survivors';
   const title = document.getElementById('over-title');
-  const sub = document.getElementById('over-sub');
-
   title.textContent = won ? 'ВЫЖИЛИ' : 'ПОГИБЛИ';
   title.className = `game-over-title ${won ? 'win' : 'lose'}`;
-  sub.textContent = won
+  document.getElementById('over-sub').textContent = won
     ? 'Оставшиеся попали в бункер. Человечество продолжится.'
     : 'Бункер так и не был заполнен правильными людьми.';
-
-  const overPlayers = document.getElementById('over-players');
-  overPlayers.innerHTML = gameState.players.map(p => `
+  document.getElementById('over-players').innerHTML = gameState.players.map(p => `
     <div class="player-item ${p.is_alive ? 'alive' : 'dead'}">
       <span class="player-name">${esc(p.name)}</span>
-      ${p.is_alive ? '<span class="player-badge" style="color:var(--green);">В бункере</span>' : '<span class="player-badge" style="color:var(--danger);">Исключён</span>'}
-    </div>
-  `).join('');
-
+      ${p.is_alive
+        ? '<span class="player-badge" style="color:var(--green);">В бункере</span>'
+        : '<span class="player-badge" style="color:var(--danger);">Исключён</span>'}
+    </div>`).join('');
   document.getElementById('host-restart').style.display = myIsHost ? 'block' : 'none';
 }
+
+// ── Host: click cell in table to edit ─────────────────────────────────────
+function hostEditCell(targetId, traitKey) {
+  if (!myIsHost || !gameState) return;
+  const player = gameState.players.find(p => p.id === targetId);
+  if (!player) return;
+
+  const card = player.card || player.revealed_card || {};
+  const current = card[traitKey] || '—';
+  const pools = gameState.trait_pools || {};
+  const options = (pools[traitKey] && pools[traitKey].length > 0) ? pools[traitKey] : [current];
+  const allOptions = options.includes(current) ? options : [current, ...options];
+
+  // Build inline cell editor modal
+  const label = TRAIT_NAMES[traitKey] || traitKey;
+  document.getElementById('cell-edit-player').textContent = player.name;
+  document.getElementById('cell-edit-trait').textContent = label;
+
+  const sel = document.getElementById('cell-edit-select');
+  sel.innerHTML = allOptions.map(v =>
+    `<option value="${esc(v)}" ${v === current ? 'selected' : ''}>${esc(v)}</option>`
+  ).join('');
+  sel.dataset.targetId = targetId;
+  sel.dataset.traitKey = traitKey;
+
+  document.getElementById('cell-edit-modal').style.display = 'flex';
+}
+
+function closeCellEditModal() {
+  document.getElementById('cell-edit-modal').style.display = 'none';
+}
+// ── Host: full edit modal (all traits of a player) ─────────────────────────
+function openFullEditModal(targetId) {
+  if (!myIsHost || !gameState) return;
+  const player = gameState.players.find(p => p.id === targetId);
+  if (!player) return;
+
+  const card = player.card || {};
+  const pools = gameState.trait_pools || {};
+
+  document.getElementById('full-edit-player').textContent = player.name;
+
+  const container = document.getElementById('full-edit-traits');
+  container.innerHTML = Object.entries(TRAIT_NAMES).map(([key, label]) => {
+    const current = card[key] || '—';
+    const options = (pools[key] && pools[key].length > 0) ? pools[key] : [current];
+    const allOptions = options.includes(current) ? options : [current, ...options];
+    const opts = allOptions.map(v =>
+      `<option value="${esc(v)}" ${v === current ? 'selected' : ''}>${esc(v)}</option>`
+    ).join('');
+    const isRevealed = (player.revealed_traits || []).includes(key);
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <div style="min-width:140px;">
+          <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;">${label}</div>
+          ${isRevealed ? '<div style="font-size:9px;color:var(--green);letter-spacing:1px;">раскрыто</div>' : ''}
+        </div>
+        <select data-target="${esc(targetId)}" data-key="${key}"
+          onchange="doOverride(this.dataset.target, this.dataset.key, this.value)"
+          style="flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text-bright);
+                 font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;cursor:pointer;">
+          ${opts}
+        </select>
+      </div>`;
+  }).join('');
+
+  document.getElementById('full-edit-modal').style.display = 'flex';
+}
+
+function closeFullEditModal() {
+  document.getElementById('full-edit-modal').style.display = 'none';
+}
+
+document.getElementById('full-edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeFullEditModal();
+});
+
+
+
+function submitCellEdit() {
+  const sel = document.getElementById('cell-edit-select');
+  const targetId = sel.dataset.targetId;
+  const traitKey = sel.dataset.traitKey;
+  const value = sel.value;
+  send({ action: 'override_trait', target_id: targetId, trait: traitKey, value });
+  closeCellEditModal();
+}
+
+document.getElementById('cell-edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeCellEditModal();
+});
 
 // ── Actions ────────────────────────────────────────────────────────────────
 function showCreate() {
@@ -351,7 +469,6 @@ function doCreate() {
 function doJoin() {
   const code = document.getElementById('join-code').value.trim().toUpperCase();
   if (!code || code.length !== 6) { notify('Введите 6-значный код', 'error'); return; }
-  // No auth check — guests allowed, server will ask for nickname if needed
   ensureWS(() => send({ action: 'join_room', room_id: code }));
 }
 
@@ -360,11 +477,7 @@ function doAuth(mode) {
   const password = document.getElementById('auth-password').value.trim();
   if (!username) { notify('Введите логин', 'error'); return; }
   if (!password) { notify('Введите пароль', 'error'); return; }
-  ensureWS(() => send({
-    action: mode === 'register' ? 'register' : 'login',
-    username,
-    password
-  }));
+  ensureWS(() => send({ action: mode === 'register' ? 'register' : 'login', username, password }));
 }
 
 function doStart() { send({ action: 'start_game' }); }
@@ -380,7 +493,7 @@ function copyCode() {
   navigator.clipboard.writeText(code).then(() => notify('Код скопирован: ' + code, 'success'));
 }
 
-// ── Guest nickname modal ────────────────────────────────────────────────────
+// ── Guest modal ────────────────────────────────────────────────────────────
 function openGuestModal() {
   document.getElementById('guest-modal').style.display = 'flex';
   document.getElementById('guest-nick-input').value = '';
@@ -433,12 +546,9 @@ function esc(str) {
 // ── URL code pre-fill ──────────────────────────────────────────────────────
 const urlParams = new URLSearchParams(location.search);
 const codeParam = urlParams.get('room');
-if (codeParam) {
-  document.getElementById('join-code').value = codeParam.toUpperCase();
-}
+if (codeParam) document.getElementById('join-code').value = codeParam.toUpperCase();
 updateAuthUI();
 
-// Enter key handlers
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter') {
     const active = document.activeElement?.id || '';
@@ -447,4 +557,5 @@ document.addEventListener('keydown', e => {
     else if (document.getElementById('create-form').style.display !== 'none') doCreate();
     else if (document.getElementById('join-form').style.display !== 'none') doJoin();
   }
+  if (e.key === 'Escape') { closeCellEditModal(); closeGuestModal(); closeFullEditModal(); }
 });

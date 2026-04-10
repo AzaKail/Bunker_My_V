@@ -638,3 +638,123 @@ small { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
   width: 90%;
   padding: 32px;
 }
+
+/* ── Tooltip ── */
+.trait-tooltip {
+  position: absolute;
+  z-index: 4000;
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  border-left: 3px solid var(--accent);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  letter-spacing: 0.5px;
+  padding: 10px 14px;
+  max-width: 320px;
+  pointer-events: none;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  animation: fadeIn 0.15s ease;
+}
+
+.tip-icon {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--accent);
+  opacity: 0.7;
+  margin-left: 3px;
+  vertical-align: middle;
+  cursor: default;
+}
+
+.has-tooltip {
+  border-bottom: 1px dashed rgba(200,168,75,0.35);
+  cursor: default;
+}
+
+/* ── Host-editable table cells ── */
+.revealed-cell.host-editable {
+  transition: background 0.15s;
+}
+
+.revealed-cell.host-editable:hover {
+  background: rgba(200,168,75,0.08);
+  outline: 1px solid rgba(200,168,75,0.3);
+  cursor: pointer;
+}
+
+.revealed-cell.host-editable:hover::after {
+  content: ' ✎';
+  color: var(--accent);
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+/* ── Cell edit modal ── */
+#cell-edit-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 3000;
+  align-items: center;
+  justify-content: center;
+}
+
+.cell-edit-box {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  max-width: 420px;
+  width: 90%;
+  padding: 28px;
+}
+
+.cell-edit-box .trait-meta {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.cell-edit-box .player-label {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.cell-edit-box .trait-label-line {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+
+.cell-edit-box select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  color: var(--text-bright);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 12px 14px;
+  outline: none;
+  cursor: pointer;
+  margin-bottom: 16px;
+  letter-spacing: 1px;
+}
+
+.cell-edit-box select option { background: var(--surface2); }
+
+/* ── Full edit modal selects ── */
+#full-edit-traits select:focus {
+  border-color: var(--accent);
+}
+
+#full-edit-traits select option {
+  background: var(--surface2);
+}

@@ -23,24 +23,18 @@
   <div id="screen-home" class="screen active">
     <div class="panel">
       <div class="panel-title">Добро пожаловать</div>
-      <p style="font-size:12px; color:var(--text); line-height:1.8; letter-spacing:1px;">
+      <p style="font-size:12px;color:var(--text);line-height:1.8;letter-spacing:1px;">
         Катастрофа уничтожила мир. Вы — группа выживших перед бункером.
         Мест меньше, чем людей. Решайте, кто достоин спастись.
       </p>
       <hr class="divider">
       <div class="panel-title" style="margin-bottom:8px;">Аккаунт</div>
-      <div id="auth-status" style="font-size:11px; color:var(--text-dim); letter-spacing:1px; margin-bottom:10px;">
+      <div id="auth-status" style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:10px;">
         Войдите или зарегистрируйтесь чтобы создавать комнаты
       </div>
       <div class="auth-grid">
-        <div>
-          <label>Логин</label>
-          <input type="text" id="auth-username" maxlength="20" placeholder="Ваш логин">
-        </div>
-        <div>
-          <label>Пароль</label>
-          <input type="text" id="auth-password" maxlength="30" placeholder="Ваш пароль">
-        </div>
+        <div><label>Логин</label><input type="text" id="auth-username" maxlength="20" placeholder="Ваш логин"></div>
+        <div><label>Пароль</label><input type="text" id="auth-password" maxlength="30" placeholder="Ваш пароль"></div>
       </div>
       <div class="btn-row" style="margin-top:12px;">
         <button class="btn btn-primary" onclick="doAuth('login')">Войти</button>
@@ -61,10 +55,10 @@
       </div>
     </div>
 
-    <div id="create-form" style="display:none; margin-top:24px;">
+    <div id="create-form" style="display:none;margin-top:24px;">
       <div class="panel">
         <div class="panel-title">Создать комнату</div>
-        <p style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">Имя берётся из аккаунта: <span id="create-account-name">—</span></p>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Имя берётся из аккаунта: <span id="create-account-name">—</span></p>
         <div class="btn-row">
           <button class="btn btn-primary" onclick="doCreate()">Создать комнату</button>
           <button class="btn btn-ghost" onclick="hideAll()">Отмена</button>
@@ -72,16 +66,15 @@
       </div>
     </div>
 
-    <div id="join-form" style="display:none; margin-top:24px;">
+    <div id="join-form" style="display:none;margin-top:24px;">
       <div class="panel">
         <div class="panel-title">Войти в комнату</div>
         <div class="field">
           <label>Код комнаты</label>
-          <input type="text" id="join-code" maxlength="6" placeholder="XXXXXX" style="text-transform:uppercase; letter-spacing:8px; font-size:24px;">
+          <input type="text" id="join-code" maxlength="6" placeholder="XXXXXX" style="text-transform:uppercase;letter-spacing:8px;font-size:24px;">
         </div>
-        <p style="font-size:11px; color:var(--text-dim); margin-bottom:12px;">
-          Имя: <span id="join-account-name">—</span>
-          <span> · без аккаунта — введёте ник после</span>
+        <p style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">
+          Имя: <span id="join-account-name">—</span> · без аккаунта — введёте ник после
         </p>
         <div class="btn-row">
           <button class="btn btn-primary" onclick="doJoin()">Войти</button>
@@ -103,12 +96,12 @@
       <div class="panel-title">Игроки в лобби</div>
       <div id="lobby-players" class="player-list"></div>
     </div>
-    <div id="host-start" style="display:none; margin-top:16px;">
+    <div id="host-start" style="display:none;margin-top:16px;">
       <button class="btn btn-primary btn-full" onclick="doStart()">▶ Начать игру</button>
-      <p style="font-size:10px; color:var(--text-dim); text-align:center; margin-top:8px; letter-spacing:1px;">Минимум 3 игрока</p>
+      <p style="font-size:10px;color:var(--text-dim);text-align:center;margin-top:8px;letter-spacing:1px;">Минимум 3 игрока</p>
     </div>
     <div id="wait-start" style="display:none;">
-      <p style="font-size:11px; color:var(--text-dim); text-align:center; letter-spacing:2px; padding:16px;">Ожидание хоста...</p>
+      <p style="font-size:11px;color:var(--text-dim);text-align:center;letter-spacing:2px;padding:16px;">Ожидание хоста...</p>
     </div>
   </div>
 
@@ -124,17 +117,22 @@
     <div class="section-title">Ваша карточка</div>
     <div class="panel my-card" id="my-card-panel">
       <div class="panel-title">Досье — <span id="my-name-display">—</span></div>
-      <p style="font-size:10px; color:var(--text-dim); letter-spacing:2px; margin-bottom:16px;">Нажмите на характеристику чтобы раскрыть её всем</p>
+      <p style="font-size:10px;color:var(--text-dim);letter-spacing:2px;margin-bottom:16px;">
+        Нажмите 👁 чтобы раскрыть характеристику всем · наведите на <span style="color:var(--accent);">ℹ</span> для описания способности
+      </p>
       <div class="traits-grid" id="my-traits"></div>
     </div>
     <div class="section-title">Участники</div>
     <div id="players-list" class="player-list"></div>
     <hr class="divider">
-    <div class="section-title">Таблица раскрытий</div>
+    <div class="section-title">
+      Таблица раскрытий
+      <span style="font-size:9px;color:var(--text-dim);font-weight:400;letter-spacing:1px;" id="table-hint-host"></span>
+    </div>
     <div class="revealed-table-wrap">
       <table class="revealed-table" id="revealed-table"></table>
     </div>
-    <div id="host-controls" style="display:none; margin-top:24px;">
+    <div id="host-controls" style="display:none;margin-top:24px;">
       <hr class="divider">
       <div class="btn-row">
         <button class="btn btn-danger" id="btn-start-vote" onclick="doStartVoting()">⚡ Начать голосование</button>
@@ -144,7 +142,7 @@
     </div>
     <hr class="divider">
     <div class="section-title">Лог раскрытий</div>
-    <div class="panel" style="padding:0; max-height:200px; overflow-y:auto;">
+    <div class="panel" style="padding:0;max-height:200px;overflow-y:auto;">
       <div id="reveal-log"></div>
     </div>
   </div>
@@ -155,18 +153,18 @@
     <div id="over-sub" class="game-over-sub"></div>
     <div class="section-title">Все участники</div>
     <div id="over-players" class="player-list" style="margin-bottom:24px;"></div>
-    <div id="host-restart" style="display:none; text-align:center;">
+    <div id="host-restart" style="display:none;text-align:center;">
       <button class="btn btn-primary" onclick="doRestart()">↺ Новая игра</button>
     </div>
   </div>
 
-</div>
+</div><!-- /app -->
 
 <!-- GUEST NICKNAME MODAL -->
 <div id="guest-modal">
   <div class="modal-box">
     <div class="panel-title" style="margin-bottom:16px;">Введите ник для игры</div>
-    <p style="font-size:11px; color:var(--text-dim); letter-spacing:1px; margin-bottom:20px;">
+    <p style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:20px;">
       Вы подключаетесь как гость. Введите имя, которое увидят другие игроки.
     </p>
     <div class="field">
@@ -180,21 +178,40 @@
   </div>
 </div>
 
-<!-- HOST EDIT MODAL -->
-<div id="edit-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:3000; align-items:center; justify-content:center;">
-  <div style="background:var(--surface); border:1px solid var(--accent); max-width:560px; width:90%; max-height:85vh; overflow-y:auto; position:relative;">
-    <div style="padding:20px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
-      <div>
-        <div style="font-size:9px; letter-spacing:3px; color:var(--text-dim); margin-bottom:4px; text-transform:uppercase;">Редактирование досье</div>
-        <div id="edit-modal-name" style="font-family:var(--display); font-size:20px; font-weight:600; letter-spacing:3px; color:var(--accent);"></div>
-      </div>
-      <button onclick="closeEditModal()" style="background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; padding:4px 8px;">✕</button>
+<!-- CELL EDIT MODAL (host only) -->
+<div id="cell-edit-modal">
+  <div class="cell-edit-box">
+    <div class="trait-meta">Редактирование досье</div>
+    <div class="player-label" id="cell-edit-player"></div>
+    <div class="trait-label-line">Категория: <span id="cell-edit-trait" style="color:var(--text-bright);"></span></div>
+    <label>Выберите новое значение</label>
+    <select id="cell-edit-select"></select>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="submitCellEdit()">✓ Применить</button>
+      <button class="btn btn-ghost" onclick="closeCellEditModal()">Отмена</button>
     </div>
-    <div id="edit-modal-traits" style="padding:16px 24px; display:flex; flex-direction:column; gap:12px;"></div>
   </div>
 </div>
 
+<script src="static/descriptions.js"></script>
 <script src="static/app.js"></script>
 <script src="static/modal.js"></script>
+
+
+
+<!-- FULL TRAIT EDIT MODAL (host only — all traits) -->
+<div id="full-edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:3000;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--accent);max-width:560px;width:90%;max-height:88vh;display:flex;flex-direction:column;">
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div>
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;">Все характеристики</div>
+        <div id="full-edit-player" style="font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:3px;color:var(--accent);"></div>
+      </div>
+      <button onclick="closeFullEditModal()" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;padding:4px 8px;">✕</button>
+    </div>
+    <div id="full-edit-traits" style="padding:8px 24px 24px;overflow-y:auto;"></div>
+  </div>
+</div>
+
 </body>
 </html>
