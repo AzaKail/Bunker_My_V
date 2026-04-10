@@ -9,7 +9,7 @@ def _get_trait_pools() -> dict:
                          HOBBIES, PHOBIAS, LARGE_INVENTORY, BACKPACKS,
                          ADDITIONAL_FACTS, SPECIAL_ABILITIES, values)
     return {
-        'race':            RACES,
+        'race':            values(RACES),
         'gender':          values(GENDERS),
         'build':           values(BUILDS),
         'human_trait':     values(HUMAN_TRAITS),

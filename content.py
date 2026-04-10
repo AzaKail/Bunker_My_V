@@ -240,7 +240,7 @@ BUNKER_SCENARIOS = [
 
 def generate_player_card() -> dict:
     return {
-        "race":            random.choice(RACES),
+        "race":            random.choice(values(RACES)),
         "gender":          random.choice(values(GENDERS)),
         "build":           random.choice(values(BUILDS)),
         "human_trait":     random.choice(values(HUMAN_TRAITS)),
