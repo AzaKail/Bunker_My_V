@@ -8,8 +8,14 @@ import os
 
 import game as g
 from models import GamePhase
+from content import write_descriptions_js
 
 app = FastAPI()
+
+@app.on_event("startup")
+async def startup():
+    write_descriptions_js()
+    print("[startup] descriptions.js generated from content.py")
 
 # WebSocket connections: room_id -> {player_id -> WebSocket}
 connections: dict[str, dict[str, WebSocket]] = {}
@@ -61,6 +67,7 @@ async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     player_id: Optional[str] = None
     room_id: Optional[str] = None
+    auth_user: Optional[str] = None
 
     try:
         while True:
@@ -70,7 +77,10 @@ async def websocket_endpoint(ws: WebSocket):
 
             # ── CREATE ROOM ──────────────────────────────────────────────────
             if action == "create_room":
-                name = msg.get("name", "Игрок").strip()[:20]
+                if not auth_user:
+                    await send_to(ws, {"type": "error", "message": "Сначала войдите в аккаунт"})
+                    continue
+                name = auth_user.strip()[:20] or "Игрок"
                 room, player = g.create_room(name)
                 player_id = player.id
                 room_id = room.id
@@ -85,8 +95,16 @@ async def websocket_endpoint(ws: WebSocket):
 
             # ── JOIN ROOM ────────────────────────────────────────────────────
             elif action == "join_room":
-                name = msg.get("name", "Игрок").strip()[:20]
                 rid = msg.get("room_id", "").strip().upper()
+                if auth_user:
+                    name = auth_user.strip()[:20] or "Игрок"
+                else:
+                    # Guest join: require a nickname
+                    guest_name = (msg.get("guest_name") or "").strip()[:20]
+                    if not guest_name:
+                        await send_to(ws, {"type": "need_guest_name", "room_id": rid})
+                        continue
+                    name = guest_name or "Гость"
                 result, data = g.join_room(rid, name)
                 if result is None:
                     await send_to(ws, {"type": "error", "message": data})
@@ -102,6 +120,28 @@ async def websocket_endpoint(ws: WebSocket):
                         "is_host": False,
                     })
                     await broadcast_state(room_id)
+            
+            # ── AUTH REGISTER ────────────────────────────────────────────────
+            elif action == "register":
+                username = (msg.get("username") or "").strip()
+                password = (msg.get("password") or "").strip()
+                ok, text = g.register_user(username, password)
+                if ok:
+                    auth_user = username
+                    await send_to(ws, {"type": "auth_ok", "username": username, "message": text})
+                else:
+                    await send_to(ws, {"type": "error", "message": text})
+
+            # ── AUTH LOGIN ───────────────────────────────────────────────────
+            elif action == "login":
+                username = (msg.get("username") or "").strip()
+                password = (msg.get("password") or "").strip()
+                ok, text = g.login_user(username, password)
+                if ok:
+                    auth_user = username
+                    await send_to(ws, {"type": "auth_ok", "username": username, "message": text})
+                else:
+                    await send_to(ws, {"type": "error", "message": text})
 
             # ── START GAME ───────────────────────────────────────────────────
             elif action == "start_game":
@@ -266,6 +306,17 @@ async def websocket_endpoint(ws: WebSocket):
 
 # ─── Static files ──────────────────────────────────────────────────────────────
 
-frontend_path = os.path.join(os.path.dirname(__file__), ".")
-if os.path.exists(frontend_path):
-    app.mount("/", StaticFiles(directory=frontend_path, html=True), name="static")
+base_path = os.path.dirname(os.path.abspath(__file__))
+static_path = os.path.join(base_path, "static")
+
+# Serve /static/ directory (CSS, JS assets)
+if os.path.exists(static_path):
+    app.mount("/static", StaticFiles(directory=static_path), name="static_assets")
+
+# Explicit index route
+@app.get("/")
+async def serve_index():
+    return FileResponse(os.path.join(base_path, "index.html"))
+
+# Fallback for /image/ etc.
+app.mount("/", StaticFiles(directory=base_path, html=True), name="root_static")

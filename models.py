@@ -5,15 +5,22 @@ import uuid
 
 
 def _get_trait_pools() -> dict:
-    from content import (GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
+    from content import (RACES, GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
                          HOBBIES, PHOBIAS, LARGE_INVENTORY, BACKPACKS,
-                         ADDITIONAL_FACTS, SPECIAL_ABILITIES)
+                         ADDITIONAL_FACTS, SPECIAL_ABILITIES, values)
     return {
-        'gender': GENDERS, 'build': BUILDS, 'human_trait': HUMAN_TRAITS,
-        'profession': PROFESSIONS, 'health': HEALTH, 'hobby': HOBBIES,
-        'phobia': PHOBIAS, 'large_inventory': LARGE_INVENTORY,
-        'backpack': BACKPACKS, 'additional_fact': ADDITIONAL_FACTS,
-        'special_ability': SPECIAL_ABILITIES,
+        'race':            RACES,
+        'gender':          values(GENDERS),
+        'build':           values(BUILDS),
+        'human_trait':     values(HUMAN_TRAITS),
+        'profession':      values(PROFESSIONS),
+        'health':          values(HEALTH),
+        'hobby':           values(HOBBIES),
+        'phobia':          values(PHOBIAS),
+        'large_inventory': values(LARGE_INVENTORY),
+        'backpack':        values(BACKPACKS),
+        'additional_fact': values(ADDITIONAL_FACTS),
+        'special_ability': values(SPECIAL_ABILITIES),
     }
 
 
@@ -46,7 +53,7 @@ class Player:
     card: dict = field(default_factory=dict)
     revealed_traits: list = field(default_factory=list)  # list of trait keys
 
-    def to_dict(self, include_card: bool = False, viewer_id: str = None) -> dict:
+    def to_dict(self, include_card: bool = False, viewer_id: str = None, viewer_is_host: bool = False) -> dict:
         d = {
             "id": self.id,
             "name": self.name,
@@ -55,7 +62,7 @@ class Player:
             "revealed_traits": self.revealed_traits,
         }
         # Full card only for the player themselves
-        if include_card and viewer_id == self.id:
+        if include_card and (viewer_id == self.id or viewer_is_host):
             d["card"] = self.card
         # Revealed traits visible to everyone
         d["revealed_card"] = {k: v for k, v in self.card.items() if k in self.revealed_traits}
@@ -85,13 +92,15 @@ class Room:
 
     def to_state(self, viewer_id: str) -> dict:
         """Full game state for a specific viewer."""
+        viewer = self.players.get(viewer_id)
+        viewer_is_host = bool(viewer and viewer.is_host)
         return {
             "room_id": self.id,
             "phase": self.phase.value,
             "scenario": self.scenario,
             "round": self.round,
             "players": [
-                p.to_dict(include_card=True, viewer_id=viewer_id)
+                p.to_dict(include_card=True, viewer_id=viewer_id, viewer_is_host=viewer_is_host)
                 for p in self.players.values()
             ],
             "votes": [{"voter_id": v.voter_id, "target_id": v.target_id} for v in self.votes],
