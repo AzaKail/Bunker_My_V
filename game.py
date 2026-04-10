@@ -195,13 +195,19 @@ def override_trait(room: "Room", target_id: str, trait_key: str, new_value: str)
     """Host changes any trait value for any player."""
     from content import (GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
                          HOBBIES, PHOBIAS, LARGE_INVENTORY, BACKPACKS,
-                         ADDITIONAL_FACTS, SPECIAL_ABILITIES)
+                         ADDITIONAL_FACTS, SPECIAL_ABILITIES, values)
     POOLS = {
-        "gender": GENDERS, "build": BUILDS, "human_trait": HUMAN_TRAITS,
-        "profession": PROFESSIONS, "health": HEALTH, "hobby": HOBBIES,
-        "phobia": PHOBIAS, "large_inventory": LARGE_INVENTORY,
-        "backpack": BACKPACKS, "additional_fact": ADDITIONAL_FACTS,
-        "special_ability": SPECIAL_ABILITIES,
+        "gender":          values(GENDERS),
+        "build":           values(BUILDS),
+        "human_trait":     values(HUMAN_TRAITS),
+        "profession":      values(PROFESSIONS),
+        "health":          values(HEALTH),
+        "hobby":           values(HOBBIES),
+        "phobia":          values(PHOBIAS),
+        "large_inventory": values(LARGE_INVENTORY),
+        "backpack":        values(BACKPACKS),
+        "additional_fact": values(ADDITIONAL_FACTS),
+        "special_ability": values(SPECIAL_ABILITIES),
     }
     player = room.players.get(target_id)
     if not player or trait_key not in POOLS:

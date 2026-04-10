@@ -7,13 +7,19 @@ import uuid
 def _get_trait_pools() -> dict:
     from content import (GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
                          HOBBIES, PHOBIAS, LARGE_INVENTORY, BACKPACKS,
-                         ADDITIONAL_FACTS, SPECIAL_ABILITIES)
+                         ADDITIONAL_FACTS, SPECIAL_ABILITIES, values)
     return {
-        'gender': GENDERS, 'build': BUILDS, 'human_trait': HUMAN_TRAITS,
-        'profession': PROFESSIONS, 'health': HEALTH, 'hobby': HOBBIES,
-        'phobia': PHOBIAS, 'large_inventory': LARGE_INVENTORY,
-        'backpack': BACKPACKS, 'additional_fact': ADDITIONAL_FACTS,
-        'special_ability': SPECIAL_ABILITIES,
+        'gender':          values(GENDERS),
+        'build':           values(BUILDS),
+        'human_trait':     values(HUMAN_TRAITS),
+        'profession':      values(PROFESSIONS),
+        'health':          values(HEALTH),
+        'hobby':           values(HOBBIES),
+        'phobia':          values(PHOBIAS),
+        'large_inventory': values(LARGE_INVENTORY),
+        'backpack':        values(BACKPACKS),
+        'additional_fact': values(ADDITIONAL_FACTS),
+        'special_ability': values(SPECIAL_ABILITIES),
     }
 
 

@@ -8,8 +8,14 @@ import os
 
 import game as g
 from models import GamePhase
+from content import write_descriptions_js
 
 app = FastAPI()
+
+@app.on_event("startup")
+async def startup():
+    write_descriptions_js()
+    print("[startup] descriptions.js generated from content.py")
 
 # WebSocket connections: room_id -> {player_id -> WebSocket}
 connections: dict[str, dict[str, WebSocket]] = {}
