@@ -5,10 +5,11 @@ import uuid
 
 
 def _get_trait_pools() -> dict:
-    from content import (GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
+    from content import (RACES, GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
                          HOBBIES, PHOBIAS, LARGE_INVENTORY, BACKPACKS,
                          ADDITIONAL_FACTS, SPECIAL_ABILITIES, values)
     return {
+        'race':            RACES,
         'gender':          values(GENDERS),
         'build':           values(BUILDS),
         'human_trait':     values(HUMAN_TRAITS),

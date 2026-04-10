@@ -75,7 +75,7 @@ def start_game(room: Room) -> bool:
 
 def reveal_trait(room: Room, player_id: str, trait_key: str) -> bool:
     VALID_TRAITS = {
-        "gender", "build", "human_trait", "profession", "health",
+        "race", "gender", "build", "human_trait", "profession", "health",
         "hobby", "phobia", "large_inventory", "backpack",
         "additional_fact", "special_ability",
     }
@@ -193,10 +193,11 @@ def restart_game(room: Room) -> None:
 
 def override_trait(room: "Room", target_id: str, trait_key: str, new_value: str) -> bool:
     """Host changes any trait value for any player."""
-    from content import (GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
+    from content import (RACES, GENDERS, BUILDS, HUMAN_TRAITS, PROFESSIONS, HEALTH,
                          HOBBIES, PHOBIAS, LARGE_INVENTORY, BACKPACKS,
                          ADDITIONAL_FACTS, SPECIAL_ABILITIES, values)
     POOLS = {
+        "race":            RACES,
         "gender":          values(GENDERS),
         "build":           values(BUILDS),
         "human_trait":     values(HUMAN_TRAITS),

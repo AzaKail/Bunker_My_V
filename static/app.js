@@ -8,6 +8,7 @@ let authUsername = null;
 let pendingGuestRoomId = null;
 
 const TRAIT_NAMES = {
+  race:            'Раса',
   gender:          'Пол',
   build:           'Телосложение',
   human_trait:     'Человеческая черта',
@@ -281,14 +282,16 @@ function renderRevealedTable() {
   const columns = Object.entries(TRAIT_NAMES);
   const tableEl = document.getElementById('revealed-table');
 
-  // Collect which columns have ANY revealed data
-  const visibleCols = columns.filter(([key]) =>
-    gameState.players.some(p => (p.revealed_traits || []).includes(key))
-  );
+  // Хост видит все колонки, остальные — только раскрытые
+  const visibleCols = myIsHost
+    ? columns
+    : columns.filter(([key]) =>
+        gameState.players.some(p => (p.revealed_traits || []).includes(key))
+      );
 
   if (visibleCols.length === 0) {
     tableEl.innerHTML = `
-      <tr><td colspan="${visibleCols.length + 1}" style="color:var(--text-dim);padding:16px;text-align:center;letter-spacing:2px;font-size:11px;">
+      <tr><td colspan="2" style="color:var(--text-dim);padding:16px;text-align:center;letter-spacing:2px;font-size:11px;">
         Никто ещё ничего не раскрыл
       </td></tr>`;
     return;
@@ -300,15 +303,25 @@ function renderRevealedTable() {
   </tr>`;
 
   const rows = gameState.players.map(p => {
-    // Only show rows where player has at least one revealed trait
-    const hasAny = visibleCols.some(([key]) => (p.revealed_traits || []).includes(key));
-    if (!hasAny) return '';
+    // Хост видит все строки, остальные — только тех у кого есть хоть одно раскрытие
+    if (!myIsHost) {
+      const hasAny = visibleCols.some(([key]) => (p.revealed_traits || []).includes(key));
+      if (!hasAny) return '';
+    }
 
     const cells = visibleCols.map(([key]) => {
       const isRevealed = (p.revealed_traits || []).includes(key);
-      if (!isRevealed) return `<td class="muted">—</td>`;
       const val = p.revealed_card?.[key] || p.card?.[key] || '—';
-      // host can click cell to edit
+
+      // Не раскрытая ячейка: хост может редактировать, остальные видят «—»
+      if (!isRevealed) {
+        if (myIsHost) {
+          return `<td class="muted host-editable" onclick="hostEditCell('${p.id}','${key}')" style="cursor:pointer;" title="Нажмите чтобы изменить">—</td>`;
+        }
+        return `<td class="muted">—</td>`;
+      }
+
+      // Раскрытая ячейка
       const editAttr = myIsHost
         ? `onclick="hostEditCell('${p.id}','${key}')" style="cursor:pointer;" title="Нажмите чтобы изменить"`
         : '';
@@ -330,7 +343,7 @@ function renderRevealedTable() {
 
   // Update host hint
   const hint = document.getElementById('table-hint-host');
-  if (hint) hint.textContent = myIsHost ? '· нажмите на ячейку чтобы изменить' : '';
+  if (hint) hint.textContent = myIsHost ? '· нажмите на любую ячейку чтобы изменить' : '';
 }
 
 function renderOver() {
@@ -374,8 +387,18 @@ function hostEditCell(targetId, traitKey) {
   ).join('');
   sel.dataset.targetId = targetId;
   sel.dataset.traitKey = traitKey;
+  sel.dataset.allOptions = JSON.stringify(allOptions);
 
   document.getElementById('cell-edit-modal').style.display = 'flex';
+}
+
+function randomCellEdit() {
+  const sel = document.getElementById('cell-edit-select');
+  const allOptions = JSON.parse(sel.dataset.allOptions || '[]');
+  if (allOptions.length < 2) return;
+  const current = sel.value;
+  const others = allOptions.filter(v => v !== current);
+  sel.value = others[Math.floor(Math.random() * others.length)];
 }
 
 function closeCellEditModal() {
