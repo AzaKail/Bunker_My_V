@@ -197,7 +197,7 @@ def override_trait(room: "Room", target_id: str, trait_key: str, new_value: str)
                          HOBBIES, PHOBIAS, LARGE_INVENTORY, BACKPACKS,
                          ADDITIONAL_FACTS, SPECIAL_ABILITIES, values)
     POOLS = {
-        "race":            values(RACES),
+        "race":            RACES,
         "gender":          values(GENDERS),
         "build":           values(BUILDS),
         "human_trait":     values(HUMAN_TRAITS),
