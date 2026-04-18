@@ -17,3 +17,4 @@
 ## Как запустить
 uvicorn main:app --reload --port 8000
 # затем открыть http://localhost:8000
+# https://bunker-v-azamat.onrender.com/ - можно попробовать поиграть
